@@ -3,7 +3,6 @@ from pydantic import BaseModel, Field
 import google.generativeai as genai
 from API_KEYS import GEMINI_API_KEY
 
-# Enhanced Pydantic model with detailed descriptions
 class CoverLetterRequest(BaseModel):
     job_post: str = Field(
         ..., 
@@ -32,7 +31,6 @@ class CoverLetterRequest(BaseModel):
         example="C#, .NET Core, Azure, SQL Server"
     )
 
-# Create FastAPI app with metadata
 app = FastAPI(
     title="Cover Letter Generator API",
     description="""
@@ -54,7 +52,7 @@ app = FastAPI(
     version="1.0.0",
     contact={
         "name": "Zeyad Hemeda",
-        "email": "zeyad.mohammedwork@gmail.com",
+        "email": "shadodiss@gmail.com",
     },
     docs_url="/docs",  # Swagger UI
     redoc_url="/redoc"  # ReDoc alternative documentation
