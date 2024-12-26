@@ -1,0 +1,6 @@
+API_KEYS.py
+tests/__pycache__
+.pytest_cache
+.venv
+--__pycache__
+/tests/snapshots
