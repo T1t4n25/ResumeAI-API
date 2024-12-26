@@ -2,5 +2,6 @@ API_KEYS.py
 tests/__pycache__
 .pytest_cache
 .venv
---__pycache__
+__pycache__/
 /tests/snapshots
+__pycache__/main.cpython-313.pyc

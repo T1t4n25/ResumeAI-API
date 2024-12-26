@@ -30,29 +30,67 @@ class CoverLetterRequest(BaseModel):
         description="Relevant professional skills",
         example="C#, .NET Core, Azure, SQL Server"
     )
+class CoverLetterResponse(BaseModel):
+    cover_letter: str = Field(
+        description="""
+        AI-generated cover letter. 
+        
+        IMPORTANT NOTE: 
+        - Each generation is unique
+        - Content may vary between requests
+        - Focuses on matching job requirements
+        - Personalized to input details
+        """,
+        examples="""Dear Hiring Manager,
+
+I am writing to apply for the Senior .NET Developer position at TechInnovate Solutions.  With five years of experience as a Software Engineer specializing in .NET development, my skills and experience align perfectly with your requirements. My background in building scalable web applications and implementing microservices architectures makes me a strong candidate for this role.
+
+My expertise encompasses C#, .NET Core, and Azure cloud technologies, including extensive experience with SQL Server and the development of RESTful APIs.  In my previous role, I spearheaded the migration of a legacy application to .NET Core, resulting in a 30% performance improvement and a 15% reduction in infrastructure costs. I also designed and implemented a new microservices architecture for a high-traffic e-commerce platform, significantly enhancing scalability and maintainability. This involved leveraging Azure services such as App Service, Azure SQL Database, and Azure Service Bus. My contributions consistently delivered reliable, high-performing solutions.
+
+I am confident I can make a significant contribution to TechInnovate Solutions. My understanding of your company’s focus on innovative cloud-based solutions, coupled with my proven ability to deliver results in a fast-paced environment, makes me an ideal fit.  I am particularly excited by the opportunity to leverage my expertise in microservices architecture to contribute to your ongoing projects.
+
+Thank you for your time and consideration. I am eager to discuss how my skills and experience can benefit TechInnovate Solutions and welcome the opportunity to speak with you further.
+
+Sincerely,
+John Doe
+"""
+    )
 
 app = FastAPI(
     title="Cover Letter Generator API",
     description="""
     ## Cover Letter Generation API
 
-    This API uses Google's Gemini AI to generate personalized cover letters based on:
-    - Job Posting Details
-    - Applicant's Professional Profile
+    ### 🤖 AI-Powered Cover Letter Generation
 
-    ### Features:
-    - AI-powered cover letter generation
-    - Personalization based on user input
-    - Professional formatting
+    #### Key Points:
+    - Uses Google's Gemini AI
+    - Dynamically generates unique cover letters
+    - Tailored to specific job postings
+    - Personalized to individual profiles
 
-    ### Requirements:
-    - Provide complete job posting
-    - Include applicant's professional details
+    ### ⚠️ Important Disclaimer
+    - Each cover letter generation is unique
+    - Content will vary between requests
+    - AI aims to capture key professional details
+    - Recommended to review and personalize further
+
+    ### 🎯 Generation Approach
+    1. Analyze job posting
+    2. Incorporate professional profile
+    3. Generate contextually relevant content
+    4. Maintain professional tone and structure
+
+    ### 🛠 Recommended Workflow
+    - Use generated letter as a strong draft
+    - Review and customize as needed
+    - Highlight personal achievements
+    - Align with specific job nuances
     """,
     version="1.0.0",
     contact={
         "name": "Zeyad Hemeda",
-        "email": "shadodiss@gmail.com",
+        "email": "zeyad.mohammedwork@gmail.com",
     },
     docs_url="/docs",  # Swagger UI
     redoc_url="/redoc"  # ReDoc alternative documentation
