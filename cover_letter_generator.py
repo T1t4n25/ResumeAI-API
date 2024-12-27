@@ -31,7 +31,7 @@ Writing Guidelines:
 1. Begin directly with "Dear Hiring Manager,"
 
 2. First Paragraph:
-   - Immediately state the position you're applying for
+   - Immediately state the position you're applying for without mentioning platform that has the post
    - Briefly introduce professional background
    - Create an immediate connection to the job requirements
 
@@ -59,7 +59,7 @@ Specific Requirements:
 - Sign off with "Sincerely, John Doe"
 
 Emphasize:
-- Specific .NET and cloud technologies
+- Specific technologies re;ated to the job
 - Practical experience
 - Measurable impacts
 - Alignment with job requirements

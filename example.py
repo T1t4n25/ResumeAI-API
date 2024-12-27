@@ -53,7 +53,7 @@ Problem-solving ability – ability to address and overcome challenges
 Communication skills – work well with team members, stakeholders, and clients
 Attention to detail
 """,
-            "user_name": "Zeyad HEmeda",
+            "user_name": "Zeyad Hemeda",
             "user_degree": "Bachelor of Computer Science",
             "user_title": "Software Engineer",
             "user_experience": "5 years of professional python development experience",
