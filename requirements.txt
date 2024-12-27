@@ -2,7 +2,5 @@ fastapi
 uvicorn
 google-generativeai
 pydantic
-pytest
-httpx
 python-multipart
 python-dotenv
