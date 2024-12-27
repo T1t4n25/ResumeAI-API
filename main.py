@@ -1,6 +1,9 @@
 import os
-from fastapi import FastAPI, HTTPException
+import secrets
+from fastapi import FastAPI, HTTPException, Security
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security.api_key import APIKeyHeader
+
 from pydantic import BaseModel, Field
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -15,6 +18,43 @@ if not GEMINI_API_KEY:
 
 PORT = int(os.getenv('PORT', 8000))
 
+class APIKeyManager:
+    def __init__(self):
+        # Generate or load API keys
+        self.valid_api_keys = self.load_or_generate_api_keys()
+    
+    def load_or_generate_api_keys(self):
+        # Check if API keys exist in environment or file
+        stored_keys = os.getenv('API_KEYS', '').split(',')
+        
+        # If no keys, generate a new one
+        if not stored_keys or stored_keys == ['']:
+            new_key = secrets.token_urlsafe(32)
+            print(f"🔑 New API Key Generated: {new_key}")
+            os.environ['API_KEYS'] = new_key
+            return [new_key]
+        
+        return stored_keys
+    
+    async def validate_api_key(self, api_key_header: str):
+        if api_key_header in self.valid_api_keys:
+            return api_key_header
+        raise HTTPException(
+            status_code=403, 
+            detail="Invalid API Key"
+        )
+
+# Create API key manager
+api_key_manager = APIKeyManager()
+
+
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+async def get_api_key(api_key_header: str = Security(api_key_header)):
+    if api_key_header == os.getenv('API_KEY'):
+        return api_key_header
+    raise HTTPException(status_code=403, detail="Could not validate credentials")
+ 
 class CoverLetterRequest(BaseModel):
     job_post: str = Field(
         ..., 
@@ -122,6 +162,7 @@ async def health_check():
     return {"status": "healthy"}
 
 @app.post("/generate-cover-letter", 
+          dependencies=[Security(api_key_manager.validate_api_key)],
           response_model=dict,
           summary="Generate Personalized Cover Letter",
           description="Creates a tailored cover letter using Gemini AI")
