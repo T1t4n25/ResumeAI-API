@@ -167,7 +167,8 @@ async def health_check():
     return {"status": "healthy"}
 
 @app.post("/generate-cover-letter", 
-          dependencies=[Security(api_key_manager.validate_api_key)],
+          dependencies=[Security(api_key_manager.validate_api_key), 
+                        limiter.limit("10/minute")],
           response_model=dict,
           summary="Generate Personalized Cover Letter",
           description="Creates a tailored cover letter using Gemini AI")
