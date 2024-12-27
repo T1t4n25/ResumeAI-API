@@ -32,6 +32,7 @@ This project is an advanced AI-powered Cover Letter Generator built using FastAP
 ```bash
 git clone https://github.com/yourusername/cover-letter-generator.git
 cd cover-letter-generator
+```
 2. Create a virtual environment:
 ```bash
 python -m venv venv
