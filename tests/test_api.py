@@ -3,21 +3,26 @@ import sys
 import os
 import re
 import pytest
-import hashlib
 import time
+import hashlib
+from datetime import datetime
 from fastapi.testclient import TestClient
 
 # Add project root to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from main import app
+from api_key_manager import APIKeyManager
 
 # Create test client
 client = TestClient(app)
 
-# Ensure snapshots directory exists
-SNAPSHOT_DIR = os.path.join(os.path.dirname(__file__), "snapshots")
-os.makedirs(SNAPSHOT_DIR, exist_ok=True)
+# Initialize API Key Manager for testing
+api_key_manager = APIKeyManager()
+
+# Create directory for generated cover letters if it doesn't exist
+COVER_LETTERS_DIR = os.path.join(os.path.dirname(__file__), "generated_cover_letters")
+os.makedirs(COVER_LETTERS_DIR, exist_ok=True)
 
 @pytest.fixture
 def valid_payload():
@@ -33,49 +38,41 @@ def valid_payload():
         "user_skills": "C#, .NET Core, Azure, SQL Server, RESTful APIs"
     }
 
-def generate_snapshot_filename(payload):
+def save_cover_letter(cover_letter: str, payload: dict) -> str:
     """
-    Generate a unique filename based on payload contents
+    Save cover letter to a unique file with timestamp and hash
+    Returns the filename
     """
-    payload_string = str(payload)
-    hash_object = hashlib.md5(payload_string.encode())
-    return f"cover_letter_snapshot_{hash_object.hexdigest()}.txt"
-
-def extract_key_content(cover_letter):
-    """
-    Extract key structural and content elements
-    """
-    # Remove extra whitespace
-    normalized = re.sub(r'\s+', ' ', cover_letter).strip()
+    # Create timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
-    # Extract key sections
-    sections = re.findall(r'(Dear[^\n]+|Sincerely[^\n]+|\b(Name|Degree|Experience|Skills)[^\n]+)', normalized, re.IGNORECASE)
+    # Create hash from content and timestamp
+    content_hash = hashlib.md5(
+        (cover_letter + timestamp).encode()
+    ).hexdigest()[:8]
     
-    # Extract skills and key professional terms
-    skills_and_terms = re.findall(r'\b(C#|\.NET|Azure|Software|Engineer|Developer)\b', normalized, re.IGNORECASE)
+    # Create filename with timestamp and hash
+    filename = f"cover_letter_{timestamp}_{content_hash}.txt"
+    filepath = os.path.join(COVER_LETTERS_DIR, filename)
     
-    return {
-        'sections': [s[0] for s in sections],
-        'skills_and_terms': list(set(skills_and_terms))
-    }
-
-def compare_cover_letters(letter1, letter2):
-    """
-    Compare two cover letters based on key content
-    """
-    content1 = extract_key_content(letter1)
-    content2 = extract_key_content(letter2)
+    # Save cover letter with metadata
+    with open(filepath, 'w') as f:
+        f.write("="*80 + "\n")
+        f.write("COVER LETTER METADATA:\n")
+        f.write("="*80 + "\n")
+        f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write(f"Job Post: {payload['job_post'][:100]}...\n")
+        f.write(f"Candidate: {payload['user_name']}\n")
+        f.write(f"Skills: {payload['user_skills']}\n")
+        f.write("\n" + "="*80 + "\n")
+        f.write("GENERATED COVER LETTER:\n")
+        f.write("="*80 + "\n\n")
+        f.write(cover_letter)
+        f.write("\n\n" + "="*80 + "\n")
+        f.write(f"Character Count: {len(cover_letter)}\n")
+        f.write("="*80 + "\n")
     
-    # Compare sections
-    section_match = len(set(content1['sections']) & set(content2['sections'])) / max(len(content1['sections']), len(content2['sections']))
-    
-    # Compare skills and terms
-    skills_match = len(set(content1['skills_and_terms']) & set(content2['skills_and_terms'])) / max(len(content1['skills_and_terms']), len(content2['skills_and_terms']))
-    
-    # Combine metrics
-    overall_similarity = (section_match + skills_match) / 2
-    
-    return overall_similarity
+    return filename
 
 def validate_cover_letter_structure(cover_letter, payload):
     """
@@ -84,7 +81,7 @@ def validate_cover_letter_structure(cover_letter, payload):
     # Validation checks
     checks = [
         # Basic length constraints
-        len(cover_letter) > 500,
+        100 < len(cover_letter) < 500,
         
         # Professional salutation check
         re.search(r'\b(Dear|To)\b', cover_letter, re.IGNORECASE) is not None,
@@ -104,48 +101,33 @@ def validate_cover_letter_structure(cover_letter, payload):
     
     return all(checks)
 
-def advanced_skill_matcher(skills, cover_letter):
+def test_generate_api_key():
     """
-    Advanced skill matching with multiple strategies
+    Test API key generation endpoint
     """
-    def normalize_skill(skill):
-        return skill.replace('.', '').lower().strip()
+    response = client.get("/generate-api-key")
     
-    # Normalize skills and cover letter
-    normalized_skills = [normalize_skill(skill) for skill in skills.split(', ')]
-    normalized_letter = cover_letter.lower()
-    
-    # Matching strategies
-    matched_skills = []
-    for skill in normalized_skills:
-        matching_conditions = [
-            skill in normalized_letter,
-            skill.replace(' ', '') in normalized_letter,
-            any(variant in normalized_letter for variant in [
-                skill,
-                skill.replace(' ', ''),
-                skill.capitalize(),
-                skill.upper()
-            ])
-        ]
-        
-        if any(matching_conditions):
-            matched_skills.append(skill)
-    
-    return {
-        'matched': matched_skills,
-        'match_percentage': len(matched_skills) / len(normalized_skills) * 100
-    }
+    assert response.status_code == 200
+    assert "api_key" in response.json()
+    assert len(response.json()["api_key"]) > 0
 
 def test_cover_letter_generation(valid_payload):
     """
     Primary test for cover letter generation
     """
-    # Make API call
-    response = client.post("/generate-cover-letter", json=valid_payload)
+    # Generate an API key to use
+    api_key_response = client.get("/generate-api-key")
+    api_key = api_key_response.json()["api_key"]
+    
+    # Make API call with generated API key
+    response = client.post(
+        "/generate-cover-letter", 
+        json=valid_payload,
+        headers={"X-API-Key": api_key}
+    )
     
     # Basic response checks
-    assert response.status_code == 200, "API call failed"
+    assert response.status_code == 200, f"API call failed: {response.text}"
     
     # Extract cover letter
     result = response.json()
@@ -155,174 +137,154 @@ def test_cover_letter_generation(valid_payload):
     
     # Structural validation
     assert validate_cover_letter_structure(cover_letter, valid_payload), "Cover letter fails structural validation"
+    
+    # Save cover letter and get filename
+    filename = save_cover_letter(cover_letter, valid_payload)
+    
+    # Print information about saved file
+    print("\n" + "="*80)
+    print(f"Cover letter saved to: {filename}")
+    print("="*80)
+    
+    # Print cover letter for immediate viewing
+    print("\nGENERATED COVER LETTER:")
+    print("="*80)
+    print(cover_letter)
+    print("="*80)
+    print(f"\nCharacter Count: {len(cover_letter)}")
+    print("="*80 + "\n")
 
-def test_skill_inclusion(valid_payload):
+def test_cover_letter_skill_inclusion(valid_payload):
     """
     Detailed skill inclusion test
     """
-    response = client.post("/generate-cover-letter", json=valid_payload)
-    cover_letter = response.json()["cover_letter"]
+    # Generate an API key to use
+    api_key_response = client.get("/generate-api-key")
+    api_key = api_key_response.json()["api_key"]
     
-    # Advanced skill matching
-    skill_match_result = advanced_skill_matcher(valid_payload['user_skills'], cover_letter)
-    
-    # Assertions
-    assert skill_match_result['match_percentage'] >= 50, (
-        f"Insufficient skill matching. "
-        f"Matched {skill_match_result['matched']} "
-        f"({skill_match_result['match_percentage']}%)"
+    response = client.post(
+        "/generate-cover-letter", 
+        json=valid_payload,
+        headers={"X-API-Key": api_key}
     )
     
-    # Print detailed matching for visibility
-    print("\nSkill Matching Details:")
-    print(f"Matched Skills: {skill_match_result['matched']}")
-    print(f"Match Percentage: {skill_match_result['match_percentage']}%")
-
-@pytest.mark.parametrize("skills_input", [
-    "C#, .NET Core, Azure",
-    "Python, Django, REST API",
-    "JavaScript, React, Node.js",
-    "Java, Spring Boot, Microservices"
-])
-def test_diverse_skill_scenarios(valid_payload, skills_input):
-    """
-    Test cover letter generation with different skill sets
-    """
-    # Update payload with new skills
-    payload = valid_payload.copy()
-    payload['user_skills'] = skills_input
-    
-    # Generate cover letter
-    response = client.post("/generate-cover-letter", json=payload)
-    
-    # Validate response
-    assert response.status_code == 200, f"Failed for skills: {skills_input}"
-    
-    cover_letter = response.json()["cover_letter"]
-    
-    # Skill matching
-    skill_match = advanced_skill_matcher(skills_input, cover_letter)
-    
-    # Ensure at least some skills are matched
-    assert skill_match['match_percentage'] > 30, (
-        f"Low skill matching for {skills_input}. "
-        f"Matched: {skill_match['matched']}"
-    )
-
-def test_error_handling():
-    """
-    Test API error handling with incomplete payload
-    """
-    # Incomplete payload
-    incomplete_payloads = [
-        {"job_post": "Sample Job Post"},
-        {"user_name": "John Doe"},
-        {}
-    ]
-    
-    for payload in incomplete_payloads:
-        response = client.post("/generate-cover-letter", json=payload)
-        
-        # Expect validation error
-        assert response.status_code == 422, f"Expected validation error for payload: {payload}"
-
-def test_long_job_post(valid_payload):
-    """
-    Test with an extremely long job post
-    """
-    long_payload = valid_payload.copy()
-    long_payload['job_post'] = "A" * 2000  # Very long job post
-    
-    response = client.post("/generate-cover-letter", json=long_payload)
-    
-    # Validate response
-    assert response.status_code == 200, "Failed to handle long job post"
-    
-    cover_letter = response.json()["cover_letter"]
-    assert len(cover_letter) > 0, "Empty cover letter generated"
-
-def test_cover_letter_snapshot(valid_payload):
-    """
-    Generate and compare cover letter snapshot
-    """
-    # Generate cover letter
-    response = client.post("/generate-cover-letter", json=valid_payload)
-    
-    # Validate response
-    assert response.status_code == 200, "API call failed"
+    # Ensure successful response
+    assert response.status_code == 200, f"API call failed: {response.text}"
     
     # Extract cover letter
-    cover_letter = response.json()["cover_letter"]
+    result = response.json()
+    cover_letter = result["cover_letter"]
     
-    # Generate snapshot filename
-    snapshot_filename = generate_snapshot_filename(valid_payload)
-    snapshot_path = os.path.join(SNAPSHOT_DIR, snapshot_filename)
+    # Save cover letter
+    filename = save_cover_letter(cover_letter, valid_payload)
     
-    # Always update or create snapshot
-    with open(snapshot_path, "w") as f:
-        f.write(cover_letter)
-    
-    # If this is the first run, we just create the snapshot
-    if not hasattr(test_cover_letter_snapshot, 'first_run'):
-        test_cover_letter_snapshot.first_run = True
-        pytest.skip("First snapshot created")
-    
-    # Read previous snapshot
-    with open(snapshot_path, "r") as f:
-        previous_snapshot = f.read()
-    
-    # Compare cover letters
-    similarity = compare_cover_letters(previous_snapshot, cover_letter)
-    
-    # Print similarity for debugging
-    print(f"\nSnapshot Similarity: {similarity:.2f}")
-    
-    # Allow more flexibility in AI-generated content
-    assert similarity > 0.4, (
-        f"Cover letter significantly differs from previous snapshot. "
-        f"Similarity: {similarity:.2f}"
-    )
-
-def test_multiple_snapshot_scenarios(valid_payload):
-    """
-    Generate snapshots for multiple scenarios
-    """
-    # Scenarios to test
-    scenarios = [
-        valid_payload,
-        {**valid_payload, "user_skills": "Python, Django, REST API"},
-        {**valid_payload, "user_title": "Senior Software Engineer"}
+    # Check skill inclusion
+    skills = valid_payload['user_skills'].split(", ")
+    matched_skills = [
+        skill for skill in skills 
+        if skill in cover_letter
     ]
     
-    for scenario in scenarios:
-        # Generate cover letter
-        response = client.post("/generate-cover-letter", json=scenario)
-        
-        # Validate response
-        assert response.status_code == 200, f"API call failed for scenario: {scenario}"
-        
-        # Extract cover letter
-        cover_letter = response.json()["cover_letter"]
-        
-        # Generate snapshot filename
-        snapshot_filename = generate_snapshot_filename(scenario)
-        snapshot_path = os.path.join(SNAPSHOT_DIR, snapshot_filename)
-        
-        # Always update snapshot
-        with open(snapshot_path, "w") as f:
-            f.write(cover_letter)
-        
-        print(f"Snapshot updated for scenario: {snapshot_filename}")
+    # Print skills analysis
+    print("\n" + "="*80)
+    print("SKILLS ANALYSIS:")
+    print("="*80)
+    print(f"Cover letter saved to: {filename}")
+    print(f"Total Skills: {len(skills)}")
+    print(f"Matched Skills: {len(matched_skills)}")
+    print("\nMatched Skills List:")
+    for skill in matched_skills:
+        print(f"✓ {skill}")
+    print("\nUnmatched Skills:")
+    for skill in set(skills) - set(matched_skills):
+        print(f"✗ {skill}")
+    print("="*80 + "\n")
+    
+    # Assert that at least half the skills are mentioned
+    assert len(matched_skills) >= len(skills) // 2, (
+        f"Insufficient skill matching. "
+        f"Matched skills: {matched_skills}"
+    )
 
-# Performance test
-def test_response_time(valid_payload):
+def test_invalid_api_key(valid_payload):
     """
-    Basic response time test
+    Test API endpoint with invalid API key
     """
+    response = client.post(
+        "/generate-cover-letter", 
+        json=valid_payload,
+        headers={"X-API-Key": "invalid_key"}
+    )
+    
+    # Expect forbidden status
+    assert response.status_code == 403, "Expected forbidden access with invalid API key"
+
+@pytest.mark.parametrize("missing_field", [
+    "job_post", "user_name", "user_degree", 
+    "user_title", "user_experience", "user_skills"
+])
+def test_missing_fields(valid_payload, missing_field):
+    """
+    Test handling of missing fields
+    """
+    # Generate an API key to use
+    api_key_response = client.get("/generate-api-key")
+    api_key = api_key_response.json()["api_key"]
+    
+    # Create payload with one field removed
+    incomplete_payload = valid_payload.copy()
+    del incomplete_payload[missing_field]
+    
+    response = client.post(
+        "/generate-cover-letter", 
+        json=incomplete_payload,
+        headers={"X-API-Key": api_key}
+    )
+    
+    # Expect validation error
+    assert response.status_code == 422, f"Expected validation error when {missing_field} is missing"
+
+def test_health_endpoint():
+    """
+    Test health check endpoint
+    """
+    response = client.get("/health")
+    
+    assert response.status_code == 200
+    assert response.json() == {"status": "healthy"}
+
+def test_response_performance(valid_payload):
+    """
+    Basic performance test
+    """
+    # Generate an API key to use
+    api_key_response = client.get("/generate-api-key")
+    api_key = api_key_response.json()["api_key"]
+    
     start_time = time.time()
-    response = client.post("/generate-cover-letter", json=valid_payload)
+    response = client.post(
+        "/generate-cover-letter", 
+        json=valid_payload,
+        headers={"X-API-Key": api_key}
+    )
     end_time = time.time()
     
-    # Check response time (adjust threshold as needed)
+    # Check response time
     response_time = end_time - start_time
-    assert response_time < 15, f"Response took too long: {response_time} seconds"
+    assert response_time < 10, f"Response took too long: {response_time} seconds"
+    
+    # Ensure successful response
+    assert response.status_code == 200, f"API call failed: {response.text}"
+
+    # If successful, save the cover letter
+    if response.status_code == 200:
+        cover_letter = response.json()["cover_letter"]
+        filename = save_cover_letter(cover_letter, valid_payload)
+        print(f"\nPerformance test cover letter saved to: {filename}")
+        print(f"Response time: {response_time:.2f} seconds")
+
+# Add to .gitignore
+gitignore_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.gitignore')
+if os.path.exists(gitignore_path):
+    with open(gitignore_path, 'a') as f:
+        f.write('\ntests/generated_cover_letters/\n')

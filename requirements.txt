@@ -2,6 +2,8 @@ fastapi
 uvicorn
 google-generativeai
 pydantic
-python-multipart
 python-dotenv
-slowapi
+python-multipart
+python-jose
+passlib
+python-multipart

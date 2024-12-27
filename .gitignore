@@ -2,9 +2,10 @@ API_KEYS.py
 tests/__pycache__
 .pytest_cache
 .venv
-__pycache__/
+__pycache__
+*.pyc
+*.cpython-313.pyc
 /tests/snapshots
-__pycache__/main.cpython-313.pyc
 .env
-__pycache__/main.cpython-313.pyc
-__pycache__/main.cpython-313.pyc
+tests/generated_cover_letters/
+
