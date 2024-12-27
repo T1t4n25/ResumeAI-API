@@ -5,3 +5,6 @@ tests/__pycache__
 __pycache__/
 /tests/snapshots
 __pycache__/main.cpython-313.pyc
+.env
+__pycache__/main.cpython-313.pyc
+__pycache__/main.cpython-313.pyc

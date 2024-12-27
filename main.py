@@ -1,7 +1,19 @@
+import os
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import google.generativeai as genai
-from API_KEYS import GEMINI_API_KEY
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+
+if not GEMINI_API_KEY:
+    raise ValueError("No Gemini API key set. Please set GEMINI_API_KEY environment variable.")
+
+PORT = int(os.getenv('PORT', 8000))
 
 class CoverLetterRequest(BaseModel):
     job_post: str = Field(
@@ -95,6 +107,19 @@ app = FastAPI(
     docs_url="/docs",  # Swagger UI
     redoc_url="/redoc"  # ReDoc alternative documentation
 )
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
 
 @app.post("/generate-cover-letter", 
           response_model=dict,
