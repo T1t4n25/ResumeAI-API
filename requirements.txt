@@ -7,3 +7,5 @@ python-multipart
 python-jose
 passlib
 python-multipart
+pytest
+httpx
