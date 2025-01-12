@@ -77,33 +77,33 @@ async def get_api_key(api_key: str = Security(api_key_header)):
             detail="Could not validate credentials"
         )
 
+
 @app.post("/generate-cover-letter", 
           response_model=CoverLetterResponse)
 async def generate_cover_letter(
     request: CoverLetterRequest,
-    api_key: str = Depends(get_api_key)
+    api_key: str = Depends(api_key_manager.validate_api_key)
 ):
     """
     Generate a personalized cover letter
-    Requires a valid API key in the X-API-Key header
     """
     try:
         result = cover_letter_generator.generate_cover_letter(request)
-        logger.info(f"Cover letter generated")
         return result
     except Exception as e:
-        logger.error(f"Cover letter generation error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating cover letter: {str(e)}"
+        )
 
 @app.post("/generate-project-description", 
-          response_model=ProjectDescriptionResponse,
-          dependencies=[Depends(api_key_manager.validate_api_key)])
-async def generate_project_description(request: ProjectDescriptionRequest):
+          response_model=ProjectDescriptionResponse)
+async def generate_project_description(
+    request: ProjectDescriptionRequest,
+    api_key: str = Depends(api_key_manager.validate_api_key)
+):
     """
-    Generate a professional project description for CV based on:
-    - Project name
-    - Skills/technologies used
-    - Optional project description
+    Generate a professional project description for CV
     """
     try:
         description = project_description_generator.generate_description(request)
@@ -113,7 +113,7 @@ async def generate_project_description(request: ProjectDescriptionRequest):
             status_code=500,
             detail=f"Error generating project description: {str(e)}"
         )
-
+        
 @app.get("/generate-api-key")
 def create_api_key():
     """
