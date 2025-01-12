@@ -8,39 +8,40 @@ class ProjectDescriptionGenerator:
 
     def generate_description(self, request: ProjectDescriptionRequest) -> str:
         """
-        Generate a professional project description for CV
+        Generate a professional project description for a CV/resume.
         """
         # Create base context from required fields
         context = f"""
         Project Name: {request.project_name}
-        Technologies/Skills: {request.skills}
+        Technologies and Skills Used: {request.skills}
         """
 
-        # Add description if provided
+        # Add additional context if provided
         if request.project_description:
-            context += f"\nAdditional Context: {request.project_description}"
+            context += f"\nAdditional Details: {request.project_description}"
 
         prompt = f"""
-        Create a professional, concise bullet point for a CV/resume based on:
+        **Task:**
+        Create a professional and impactful sentence for a CV/resume based on the following information.
 
+        **Project Details:**
         {context}
 
-        Guidelines:
-        - Start with a strong action verb
-        - Emphasize the technologies and skills provided
-        - Keep it between 30-50 words
-        - Make it impactful and professional
-        - Format as a single bullet point
-        - Focus on technical implementation
-        - Highlight the complexity and scope
-        - If additional context is provided, incorporate relevant details
+        **Instructions:**
+        - Begin with a strong action verb.
+        - Emphasize the technologies and skills listed.
+        - **Include specific metrics or quantifiable results when possible** (e.g., percentages, numbers, time saved).
+        - Keep the sentence concise (around 30-50 words).
+        - Focus on your contributions and achievements.
+        - Highlight the project's complexity and scope.
+        - Incorporate relevant details from the additional context if provided.
+        - Do not start the sentence with bullet points, numbers, or symbols.
 
-        Example Format:
-        "Developed a full-stack e-commerce platform utilizing React and Firebase, implementing secure payment processing with Stripe and achieving seamless user experience through responsive design."
+        **Example:**
+        Developed a full-stack e-commerce platform using React and Firebase, integrated secure payment processing with Stripe, **increasing user transaction rates by 25%** and **improving page load times by 40%**.
 
-        Generate a similar style bullet point emphasizing the provided skills and technologies.
+        **Now, write the sentence following the above instructions.**
         """
-
         try:
             response = self.model.generate_content(prompt)
             return response.text.strip()
