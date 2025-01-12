@@ -1,7 +1,7 @@
 import requests
 
 # Replace with your Railway URL
-PROD_URL = "https://generate-cover-letter-fast-api-production.up.railway.app/"
+PROD_URL = "http://127.0.0.1:8000"
 
 def test_simple_request():
     # First, get an API key
