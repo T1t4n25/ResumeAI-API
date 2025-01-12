@@ -6,9 +6,15 @@ from fastapi.security import APIKeyHeader
 from dotenv import load_dotenv
 
 # Local imports
-from models import CoverLetterRequest, CoverLetterResponse
+from models import (
+    CoverLetterRequest, 
+    CoverLetterResponse, 
+    ProjectDescriptionRequest, 
+    ProjectDescriptionResponse
+)
 from api_key_manager import APIKeyManager
 from cover_letter_generator import CoverLetterGenerator
+from project_description_generator import ProjectDescriptionGenerator
 
 # Load environment variables
 load_dotenv()
@@ -20,12 +26,19 @@ logger = logging.getLogger(__name__)
 # Initialize managers
 api_key_manager = APIKeyManager()
 cover_letter_generator = CoverLetterGenerator()
+project_description_generator = ProjectDescriptionGenerator()
 
 # Create FastAPI app
 app = FastAPI(
-    title="Cover Letter Generator API",
-    description="AI-powered cover letter generation service",
-    version="1.0.0"
+    title="Resume Flow API",
+    description="""
+    AI-powered generator for:
+    - Professional Cover Letters
+    - Project Descriptions for CV
+    
+    Built with FastAPI and Google's Gemini AI.
+    """,
+    version="2.0.0"
 )
 
 # Create API Key Header dependency
@@ -81,6 +94,25 @@ async def generate_cover_letter(
     except Exception as e:
         logger.error(f"Cover letter generation error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/generate-project-description", 
+          response_model=ProjectDescriptionResponse,
+          dependencies=[Depends(api_key_manager.validate_api_key)])
+async def generate_project_description(request: ProjectDescriptionRequest):
+    """
+    Generate a professional project description for CV based on:
+    - Project name
+    - Skills/technologies used
+    - Optional project description
+    """
+    try:
+        description = project_description_generator.generate_description(request)
+        return {"project_description": description}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating project description: {str(e)}"
+        )
 
 @app.get("/generate-api-key")
 def create_api_key():

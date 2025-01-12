@@ -32,3 +32,26 @@ class CoverLetterRequest(BaseModel):
 class CoverLetterResponse(BaseModel):
     cover_letter: str
     tokens_used: Optional[int] = None
+
+class ProjectDescriptionRequest(BaseModel):
+    project_name: str = Field(
+        ..., 
+        description="Name of the project",
+        example="E-commerce Website"
+    )
+    skills: str = Field(
+        ...,
+        description="Technologies and skills used in the project",
+        example="React, Firebase, Stripe, REST APIs"
+    )
+    project_description: Optional[str] = Field(
+        None,
+        description="Additional description of the project (optional)",
+        example="Built a website for an online store. Users can browse products, add to cart, and checkout."
+    )
+
+class ProjectDescriptionResponse(BaseModel):
+    project_description: str = Field(
+        ...,
+        description="Generated professional project description for CV"
+    )
