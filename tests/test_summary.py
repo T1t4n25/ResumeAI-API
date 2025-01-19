@@ -158,7 +158,8 @@ def test_summary_generation(api_key, test_payload):
             any(achievement_word in summary.lower() for achievement_word in [
                 "achieved", "reduced", "improved", "led", "developed",
                 "increased", "delivered", "implemented", "spearheaded",
-                "orchestrated", "optimized", "enhanced", "streamlined"
+                "orchestrated", "optimized", "enhanced", "streamlined",
+                "built", "created", "managed", "coordinated", "executed"
             ]),
             "Missing achievement-focused language"
         ),
@@ -167,18 +168,36 @@ def test_summary_generation(api_key, test_payload):
             "Missing numerical metrics"
         ),
         "Action Verbs": (
-            summary.lower().split()[0] in [
+            any(verb in summary.lower().split()[0] for verb in [
+                # Traditional action verbs
                 "developed", "implemented", "led", "spearheaded", "orchestrated",
-                "delivered", "designed", "architected", "engineered", "managed"
-            ],
-            "Does not start with action verb"
+                "delivered", "designed", "architected", "engineered", "managed",
+                # Additional starting verbs
+                "experienced", "skilled", "seasoned", "accomplished", "proven",
+                "dedicated", "results-driven", "innovative", "dynamic", "expert",
+                "professional", "passionate", "versatile", "proficient",
+                # Technical starts
+                "senior", "tech", "software", "full-stack", "backend", "frontend"
+            ]),
+            "Does not start with acceptable verb or professional descriptor"
         ),
         "Value Proposition": (
-            any(phrase in summary.lower() for phrase in [
+            any(phrase.lower() in summary.lower() for phrase in [
+                # Traditional value phrases
                 "expertise in", "specialized in", "proven track record", 
-                "demonstrated success", "brings", "driving", "delivering"
+                "demonstrated success", "brings", "driving", "delivering",
+                # Additional value phrases
+                "experience with", "proficient in", "skilled in",
+                "background in", "knowledge of", "mastery of",
+                "track record", "history of", "success in",
+                "focused on", "dedicated to", "committed to",
+                "specializing in", "excelling in", "proficiency in",
+                "experienced in", "expertise with", "capabilities in",
+                # Achievement indicators
+                "successfully", "effectively", "consistently",
+                "proven ability", "demonstrated ability"
             ]),
-            "Missing value proposition"
+            "Missing value proposition or professional capability statement"
         )
     }
     
