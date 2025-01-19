@@ -287,4 +287,3 @@ gitignore_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.giti
 if os.path.exists(gitignore_path):
     with open(gitignore_path, 'a') as f:
         f.write('\ntests/generated_cover_letters/\n')
-# Project Description Generator Tests ==========================================================================

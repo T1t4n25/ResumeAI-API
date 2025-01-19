@@ -11,7 +11,7 @@ class SummaryGenerator:
         Generate a professional summary for resume
         """
         prompt = f"""
-        Create a concise and impactful resume summary for a CV that showcases professional expertise and value proposition.
+        Create a concise and impactful resume summary for a CV that showcases professional expertise and achievements.
 
         Use this information:
         - Name and Title: {request.current_title}
@@ -22,21 +22,26 @@ class SummaryGenerator:
         Requirements:
         1. Length: 50-75 words
         2. Structure:
-           - Open with professional identity and experience level
-           - Highlight core technical expertise and skills
-           - Showcase quantifiable achievements
+           - Start with a strong action verb followed by professional identity
+           - Emphasize years of experience
+           - Highlight measurable achievements using action verbs (improved, reduced, increased, led, developed)
+           - Showcase technical expertise
            - End with value proposition
         3. Style:
-           - Use confident, professional tone
-           - Include action-oriented language
-           - Be specific and measurable
-           - Avoid clichés and generic statements
+           - Use achievement-focused language (delivered, implemented, spearheaded, orchestrated)
+           - Include quantifiable results
+           - Be specific and impactful
+           - Maintain professional tone
+           - Must include at least one measurable achievement
 
         Example Format:
-        "Seasoned Software Engineer with 5+ years of expertise in cloud architecture and full-stack development. Demonstrated success in leading high-impact projects, including a system optimization initiative that reduced latency by 40%. Brings deep expertise in Python, AWS, and microservices architecture, with a proven track record of delivering scalable solutions."
+        "Spearheaded complex software solutions as a Senior Software Engineer with 5+ years of expertise in cloud architecture. Successfully led a team of 5 developers, delivering a system optimization that reduced latency by 40%. Demonstrated mastery of Python and AWS, consistently driving innovation in microservices architecture and scalable solutions."
 
-        Generate a powerful summary that demonstrates expertise and potential value to employers.
-        The response MUST be between 50-75 words and maintain a professional, achievement-focused tone.
+        Generate a powerful summary that emphasizes achievements and expertise.
+        IMPORTANT: 
+        - Include at least one achievement with metrics
+        - Use strong action verbs (developed, implemented, led, improved, reduced, increased)
+        - Response MUST be between 50-75 words
         """
 
         try:
