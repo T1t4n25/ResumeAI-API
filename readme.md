@@ -1,106 +1,166 @@
-# AI-Powered Cover Letter Generator
+# AI-Powered Resume Assistant API
 
-## Overview
-
-This project is an advanced AI-powered Cover Letter Generator built using FastAPI and Google's Gemini AI. It helps job seekers create personalized, professional cover letters tailored to specific job postings.
+A FastAPI-based backend service that leverages Google's Gemini AI to generate professional cover letters, project descriptions, and resume summaries. This service is designed to help job seekers create compelling job application materials efficiently.
 
 ## 🚀 Features
 
-- 🤖 AI-driven cover letter generation
-- 📝 Personalized content based on user profile
-- 🎯 Tailored to specific job descriptions
-- 🔒 Secure API endpoint
-- 📊 Supports various professional backgrounds
+- **Cover Letter Generation**: Creates tailored cover letters based on job descriptions and user profiles
+- **Project Description Generation**: Crafts impactful project descriptions for resumes/CVs
+- **Professional Summary Generation**: Generates concise professional summaries
+- **Secure API Access**: Implementation of API key authentication
+- **Comprehensive Testing**: Includes unit tests with detailed validation
+- **Automated Documentation**: FastAPI-generated OpenAPI documentation
 
-## 🛠 Technologies Used
+## 🛠️ Tech Stack
 
-- Python
-- FastAPI
-- Google Generative AI (Gemini)
-- Pydantic
-- Pytest
+- **Framework**: FastAPI
+- **AI Model**: Google Gemini AI (1.5 Pro/Flash)
+- **Testing**: pytest
+- **Authentication**: Custom API Key management
+- **Documentation**: OpenAPI (Swagger UI)
+- **Environment Management**: python-dotenv
 
-## 📦 Prerequisites
+## 📋 Prerequisites
 
 - Python 3.8+
-- Google Generative AI API Key
+- Google Cloud Project with Gemini API access
+- Environment variables setup
 
 ## 🔧 Installation
 
 1. Clone the repository:
-
 ```bash
-git clone https://github.com/yourusername/cover-letter-generator.git
-cd cover-letter-generator
+git clone https://github.com/yourusername/t1t4n25-generate-cover-letter-fast-api.git
+cd t1t4n25-generate-cover-letter-fast-api
 ```
-2. Create a virtual environment:
+
+2. Create and activate a virtual environment:
 ```bash
 python -m venv venv
-source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+source venv/bin/activate  # On Windows use: .\venv\Scripts\activate
 ```
 
 3. Install dependencies:
-
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Set up API Key:
-   Create a file `API_KEYS.py` in the project root:
-
-```python
-GEMINI_API_KEY = 'your_google_generative_ai_api_key'
+4. Create a `.env` file in the project root:
+```env
+GEMINI_API_KEY=your_gemini_api_key
+API_KEYS=your_initial_api_key  # Optional
 ```
 
 ## 🚀 Running the Application
 
-### Development Server
-
+1. Start the server:
 ```bash
-uvicorn main:app --reload
+./start.sh
+# Or manually:
+uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-### API Documentation
+2. Access the API documentation:
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
 
-- Swagger UI: [http://localhost:8000/docs](http://localhost:8000/docs)
-- ReDoc: [http://localhost:8000/redoc](http://localhost:8000/redoc)
+## 🔑 API Authentication
+
+All endpoints (except `/generate-api-key` and `/health`) require API key authentication:
+
+1. Generate an API key:
+```bash
+curl http://localhost:8000/generate-api-key
+```
+
+2. Use the API key in requests:
+```bash
+curl -H "X-API-Key: your_api_key" -X POST http://localhost:8000/endpoint
+```
+
+## 📝 API Endpoints
+
+### Cover Letter Generation
+```http
+POST /generate-cover-letter
+```
+Generates a professional cover letter based on job posting and user profile.
+
+### Project Description Generation
+```http
+POST /generate-project-description
+```
+Creates impactful project descriptions for resumes/CVs.
+
+### Professional Summary Generation
+```http
+POST /generate-summary
+```
+Generates professional summaries for resumes.
+
+### API Key Management
+```http
+GET /generate-api-key
+```
+Generates a new API key for authentication.
+
+### Health Check
+```http
+GET /health
+```
+Simple health check endpoint.
 
 ## 🧪 Running Tests
 
+Execute the test suite:
 ```bash
-pytest tests/test_api.py
+pytest tests/
 ```
 
-## 📝 Example Usage
+The tests generate output files in:
+- `tests/generated_cover_letters/`
+- `tests/generated_projects/`
+- `tests/generated_summaries/`
 
-### API Request Payload
+## 📁 Project Structure
 
-```json
-
-{
-    "job_post": "Senior .NET Developer job description...",
-    "user_name": "John Doe",
-    "user_degree": "Bachelor of Science in Computer Science",
-    "user_title": "Software Engineer",
-    "user_experience": "5 years of .NET development",
-    "user_skills": "C#, .NET Core, Azure, SQL Server"
-}
+```
+t1t4n25-generate-cover-letter-fast-api/
+├── api_key_manager.py      # API key management
+├── cover_letter_generator.py # Cover letter generation logic
+├── main.py                 # FastAPI application and routes
+├── models.py              # Pydantic models for requests/responses
+├── project_description_generator.py # Project description generation
+├── summary_generator.py    # Professional summary generation
+├── requirements.txt       # Project dependencies
+├── start.sh              # Startup script
+└── tests/                # Test suite
 ```
 
-## 🔒 Security
+## 🔒 Security Considerations
 
-- Secure API key management
-- Input validation
-- Error handling
+- API keys are required for all main endpoints
+- Keys are securely generated using `secrets` module
+- Environment variables are used for sensitive data
+- No user data is stored persistently
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+[MIT License](LICENSE)
+
+## 👥 Authors
+
+- Your Name (@yourusername)
+
+## 🙏 Acknowledgments
+
+- Google Gemini AI team for the powerful language model
+- FastAPI team for the excellent framework
