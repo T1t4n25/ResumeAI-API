@@ -10,11 +10,14 @@ from models import (
     CoverLetterRequest, 
     CoverLetterResponse, 
     ProjectDescriptionRequest, 
-    ProjectDescriptionResponse
+    ProjectDescriptionResponse,
+    SummaryRequest,
+    SummaryResponse
 )
 from api_key_manager import APIKeyManager
 from cover_letter_generator import CoverLetterGenerator
 from project_description_generator import ProjectDescriptionGenerator
+from summary_generator import SummaryGenerator
 
 # Load environment variables
 load_dotenv()
@@ -27,6 +30,8 @@ logger = logging.getLogger(__name__)
 api_key_manager = APIKeyManager()
 cover_letter_generator = CoverLetterGenerator()
 project_description_generator = ProjectDescriptionGenerator()
+summary_generator = SummaryGenerator()
+
 
 # Create FastAPI app
 app = FastAPI(
@@ -113,6 +118,23 @@ async def generate_project_description(
             status_code=500,
             detail=f"Error generating project description: {str(e)}"
         )
+
+@app.post("/generate-summary", 
+          response_model=SummaryResponse,
+          dependencies=[Depends(api_key_manager.validate_api_key)])
+async def generate_summary(request: SummaryRequest):
+    """
+    Generate a professional summary for resume
+    """
+    try:
+        summary = summary_generator.generate_summary(request)
+        return {"summary": summary}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating summary: {str(e)}"
+        )
+
         
 @app.get("/generate-api-key")
 def create_api_key():

@@ -96,8 +96,8 @@ def test_summary_generation(api_key, test_payload):
     print("-"*80)
     print(f"Word Count: {word_count}")
     
-    # Basic validations
-    assert 30 <= word_count <= 50, f"Word count {word_count} outside range 30-50"
+    # Word count validation
+    assert 50 <= word_count <= 75, f"Word count {word_count} outside range 50-75"
     
     # Save the summary
     filename = save_summary(
@@ -116,12 +116,17 @@ def test_summary_generation(api_key, test_payload):
     
     # Content validations
     validations = {
-        "Title": test_payload["current_title"].lower() in summary.lower(),
+        "Professional Identity": test_payload["current_title"].lower() in summary.lower(),
         "Experience": test_payload["years_experience"].lower() in summary.lower(),
-        "Skills": any(skill.lower() in summary.lower() 
-                     for skill in test_payload["skills"].split(", ")),
-        "Professional Tone": any(word in summary.lower() 
-                               for word in ["professional", "experienced", "skilled", "expert"])
+        "Technical Skills": any(skill.lower() in summary.lower() 
+                              for skill in test_payload["skills"].split(", ")),
+        "Achievement Focus": any(word in summary.lower() 
+                               for word in ["achieved", "reduced", "improved", "led", "developed"]),
+        "Action Language": any(word in summary.lower() 
+                             for word in ["delivered", "implemented", "managed", "designed", "developed"]),
+        "Value Proposition": any(phrase in summary.lower() 
+                               for phrase in ["expertise in", "specialized in", "proven track record", 
+                                            "demonstrated success", "brings"])
     }
     
     print("\nValidation Results:")
@@ -129,7 +134,6 @@ def test_summary_generation(api_key, test_payload):
     for criterion, passed in validations.items():
         print(f"{criterion:15}: {'✓' if passed else '✗'}")
         assert passed, f"Validation failed for {criterion}"
-
 def test_missing_fields(api_key):
     """Test missing required fields"""
     print("\nTesting Missing Fields")
