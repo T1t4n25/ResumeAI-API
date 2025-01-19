@@ -55,3 +55,31 @@ class ProjectDescriptionResponse(BaseModel):
         ...,
         description="Generated professional project description for CV"
     )
+    
+class SummaryRequest(BaseModel):
+    current_title: str = Field(
+        ..., 
+        description="Your current job title",
+        example="Senior Software Engineer"
+    )
+    years_experience: str = Field(
+        ...,
+        description="Years of professional experience",
+        example="5+ years"
+    )
+    skills: str = Field(
+        ...,
+        description="Key skills and technologies",
+        example="Python, React, AWS, Microservices"
+    )
+    achievements: Optional[str] = Field(
+        None,
+        description="Notable achievements or impacts (optional)",
+        example="Led team of 5, Reduced system latency by 40%"
+    )
+
+class SummaryResponse(BaseModel):
+    summary: str = Field(
+        ...,
+        description="Generated professional summary for resume"
+    )
