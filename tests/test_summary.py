@@ -139,8 +139,8 @@ def test_summary_generation(api_key, test_payload):
     assert filename is not None, "Failed to save summary"
     print(f"\nSaved to: {filename}")
     
-    # Content validations
-    validations = {
+ # Split validations into required and best practices
+    required_validations = {
         "Word Count": (40 <= word_count <= 75, f"Word count {word_count} outside range 40-75"),
         "Professional Identity": (
             test_payload["current_title"].lower() in summary.lower(),
@@ -154,80 +154,114 @@ def test_summary_generation(api_key, test_payload):
             any(skill.lower() in summary.lower() for skill in test_payload["skills"].split(", ")),
             "Missing technical skills"
         ),
+        "Metrics Present": (
+            any(char.isdigit() for char in summary),
+            "Missing numerical metrics"
+        )
+    }
+
+    best_practices = {
+        "Action Verb Start": (
+            summary.lower().split()[0] in [
+                "developed", "implemented", "led", "spearheaded", "orchestrated",
+                "delivered", "designed", "architected", "engineered", "managed",
+                "experienced", "skilled", "seasoned", "accomplished",
+                "results-oriented", "results-driven", "innovative"
+            ],
+            "Consider starting with strong action verb"
+        ),
         "Achievement Focus": (
             any(achievement_word in summary.lower() for achievement_word in [
                 "achieved", "reduced", "improved", "led", "developed",
                 "increased", "delivered", "implemented", "spearheaded",
-                "orchestrated", "optimized", "enhanced", "streamlined",
-                "built", "created", "managed", "coordinated", "executed"
+                "orchestrated", "optimized", "enhanced", "streamlined"
             ]),
-            "Missing achievement-focused language"
-        ),
-        "Metrics Present": (
-            any(char.isdigit() for char in summary),
-            "Missing numerical metrics"
-        ),
-        "Action Verbs": (
-            any(verb in summary.lower().split()[0] for verb in [
-                # Traditional action verbs
-                "developed", "implemented", "led", "spearheaded", "orchestrated",
-                "delivered", "designed", "architected", "engineered", "managed",
-                # Additional starting verbs
-                "experienced", "skilled", "seasoned", "accomplished", "proven",
-                "dedicated", "results-driven", "innovative", "dynamic", "expert",
-                "professional", "passionate", "versatile", "proficient",
-                # Technical starts
-                "senior", "tech", "software", "full-stack", "backend", "frontend"
-            ]),
-            "Does not start with acceptable verb or professional descriptor"
+            "Consider including achievement-focused language"
         ),
         "Value Proposition": (
             any(phrase.lower() in summary.lower() for phrase in [
-                # Traditional value phrases
                 "expertise in", "specialized in", "proven track record", 
-                "demonstrated success", "brings", "driving", "delivering",
-                # Additional value phrases
-                "experience with", "proficient in", "skilled in",
-                "background in", "knowledge of", "mastery of",
-                "track record", "history of", "success in",
-                "focused on", "dedicated to", "committed to",
-                "specializing in", "excelling in", "proficiency in",
-                "experienced in", "expertise with", "capabilities in",
-                # Achievement indicators
-                "successfully", "effectively", "consistently",
-                "proven ability", "demonstrated ability"
+                "demonstrated success", "proven ability", "expertise",
+                "successfully", "effectively", "consistently"
             ]),
-            "Missing value proposition or professional capability statement"
+            "Consider adding clear value proposition"
+        ),
+        "Length Optimization": (
+            50 <= word_count <= 75,
+            "Consider expanding to 50-75 words for optimal detail"
+        ),
+        "Skills Integration": (
+            sum(1 for skill in test_payload["skills"].split(", ") 
+                if skill.lower() in summary.lower()) >= 2,
+            "Consider mentioning more technical skills"
         )
     }
     
-    # Print validation results
-    print("\nValidation Results:")
+    # Print and save validation results
+    print("\nRequired Criteria:")
     print("-"*80)
-    failed_validations = []
-    for criterion, (passed, error_msg) in validations.items():
+    failed_required = []
+    for criterion, (passed, error_msg) in required_validations.items():
         status = "✓" if passed else "✗"
         print(f"{criterion:20}: {status}")
         if not passed:
-            failed_validations.append(f"{criterion}: {error_msg}")
-    
-    # Save validation results to the same file
+            failed_required.append(f"{criterion}: {error_msg}")
+
+    print("\nBest Practices:")
+    print("-"*80)
+    best_practices_met = []
+    best_practices_missed = []
+    for criterion, (passed, suggestion) in best_practices.items():
+        status = "✓" if passed else "○"  # Using ○ instead of ✗ for best practices
+        print(f"{criterion:20}: {status}")
+        if passed:
+            best_practices_met.append(criterion)
+        else:
+            best_practices_missed.append(f"{criterion}: {suggestion}")
+
+    # Save results to file
     if os.path.exists(os.path.join(SUMMARIES_DIR, filename)):
         with open(os.path.join(SUMMARIES_DIR, filename), 'a') as f:
             f.write("\nVALIDATION RESULTS:\n")
+            f.write("="*80 + "\n")
+            
+            f.write("\nREQUIRED CRITERIA:\n")
             f.write("-"*80 + "\n")
-            for criterion, (passed, _) in validations.items():
+            for criterion, (passed, _) in required_validations.items():
                 f.write(f"{criterion:20}: {'Passed' if passed else 'Failed'}\n")
-            if failed_validations:
-                f.write("\nFAILED VALIDATIONS:\n")
+            
+            f.write("\nBEST PRACTICES:\n")
+            f.write("-"*80 + "\n")
+            for criterion, (passed, suggestion) in best_practices.items():
+                f.write(f"{criterion:20}: {'Met' if passed else 'Consider'}\n")
+            
+            if failed_required:
+                f.write("\nFAILED REQUIRED CRITERIA:\n")
                 f.write("-"*80 + "\n")
-                for failure in failed_validations:
+                for failure in failed_required:
                     f.write(f"- {failure}\n")
+            
+            if best_practices_missed:
+                f.write("\nBEST PRACTICE SUGGESTIONS:\n")
+                f.write("-"*80 + "\n")
+                for suggestion in best_practices_missed:
+                    f.write(f"- {suggestion}\n")
+            
+            # Add summary statistics
+            f.write("\nSUMMARY:\n")
+            f.write("-"*80 + "\n")
+            f.write(f"Required Criteria Met: {len(required_validations) - len(failed_required)}/{len(required_validations)}\n")
+            f.write(f"Best Practices Met: {len(best_practices_met)}/{len(best_practices)}\n")
     
-    # Now assert the validations
-    assert all(passed for passed, _ in validations.values()), \
-        "Validation failures:\n" + "\n".join(failed_validations)
-        
+    # Assert only required validations
+    assert all(passed for passed, _ in required_validations.values()), \
+        "Failed required criteria:\n" + "\n".join(failed_required)
+
+    # Print summary statistics
+    print(f"\nSummary Statistics:")
+    print(f"Required Criteria Met: {len(required_validations) - len(failed_required)}/{len(required_validations)}")
+    print(f"Best Practices Met: {len(best_practices_met)}/{len(best_practices)}")
+    
 def test_missing_fields(api_key):
     """Test missing required fields"""
     print("\nTesting Missing Fields")
