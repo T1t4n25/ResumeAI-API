@@ -15,7 +15,7 @@ class CoverLetterGenerator:
         Generate a cover letter using Gemini AI
         """
         cover_letter_prompt = f"""
-Craft a professional cover letter for a .NET developer position, focusing solely on the essential content. Eliminate any placeholder or template-style headers like addresses or contact information. 
+Craft a professional cover letter using the provided job posting and candidate data. Focus solely on the essential content, eliminating any placeholder or template-style headers like addresses or contact information. 
 
 Job Posting Context:
 {request.job_post}
@@ -56,15 +56,16 @@ Specific Requirements:
 - Use a professional, confident tone
 - Focus on technical achievements
 - Avoid generic statements
-- Sign off with "Sincerely, John Doe"
+- Sign off with "Sincerely," followed by the provided name
+- Use numerals for all numbers (e.g., "5 years", "40% improvement") - never spell out numbers
 
 Emphasize:
-- Specific technologies re;ated to the job
+- Specific technologies from the job posting
 - Practical experience
-- Measurable impacts
+- Measurable impacts (always in numeral form)
 - Alignment with job requirements
 
-Generate a concise, impactful cover letter that goes straight to the professional content.
+Generate a concise, impactful cover letter that goes straight to the professional content, using the provided candidate data throughout.
 """
 
         try:
