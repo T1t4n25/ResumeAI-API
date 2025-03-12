@@ -1,6 +1,6 @@
 import requests
 
-# Replace with your Railway URL
+# Replace with your API endpoint URL
 PROD_URL = "http://127.0.0.1:8000"
 
 def test_simple_request():
