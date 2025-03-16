@@ -192,7 +192,7 @@ cython_debug/
 *.cb
 *.cb2
 .*.lb
-
+*.pdf
 ## Intermediate documents:
 *.dvi
 *.xdv
