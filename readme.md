@@ -29,23 +29,27 @@ A FastAPI-based backend service that leverages Google's Gemini AI to generate pr
 ## 🔧 Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/yourusername/t1t4n25-generate-cover-letter-fast-api.git
 cd t1t4n25-generate-cover-letter-fast-api
 ```
 
 2. Create and activate a virtual environment:
+
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows use: .\venv\Scripts\activate
 ```
 
 3. Install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 4. Create a `.env` file in the project root:
+
 ```env
 GEMINI_API_KEY=your_gemini_api_key
 API_KEYS=your_initial_api_key  # Optional
@@ -54,6 +58,7 @@ API_KEYS=your_initial_api_key  # Optional
 ## 🚀 Running the Application
 
 1. Start the server:
+
 ```bash
 ./start.sh
 # Or manually:
@@ -61,6 +66,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
 2. Access the API documentation:
+
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
 
@@ -69,11 +75,13 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 All endpoints (except `/generate-api-key` and `/health`) require API key authentication:
 
 1. Generate an API key:
+
 ```bash
 curl http://localhost:8000/generate-api-key
 ```
 
 2. Use the API key in requests:
+
 ```bash
 curl -H "X-API-Key: your_api_key" -X POST http://localhost:8000/endpoint
 ```
@@ -81,43 +89,55 @@ curl -H "X-API-Key: your_api_key" -X POST http://localhost:8000/endpoint
 ## 📝 API Endpoints
 
 ### Cover Letter Generation
+
 ```http
 POST /generate-cover-letter
 ```
+
 Generates a professional cover letter based on job posting and user profile.
 
 ### Project Description Generation
+
 ```http
 POST /generate-project-description
 ```
+
 Creates impactful project descriptions for resumes/CVs.
 
 ### Professional Summary Generation
+
 ```http
 POST /generate-summary
 ```
+
 Generates professional summaries for resumes.
 
 ### API Key Management
+
 ```http
 GET /generate-api-key
 ```
+
 Generates a new API key for authentication.
 
 ### Health Check
+
 ```http
 GET /health
 ```
+
 Simple health check endpoint.
 
 ## 🧪 Running Tests
 
 Execute the test suite:
+
 ```bash
 pytest tests/
 ```
 
 The tests generate output files in:
+
 - `tests/generated_cover_letters/`
 - `tests/generated_projects/`
 - `tests/generated_summaries/`
@@ -158,7 +178,7 @@ t1t4n25-generate-cover-letter-fast-api/
 
 ## 👥 Authors
 
-- Your Name (@yourusername)
+- Zeyad Hemeda (@yourusername)
 
 ## 🙏 Acknowledgments
 
