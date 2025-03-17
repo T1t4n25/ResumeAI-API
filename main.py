@@ -4,6 +4,10 @@ from fastapi import FastAPI, Depends, HTTPException, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 from dotenv import load_dotenv
+import requests
+import datetime
+from contextlib import asynccontextmanager
+
 
 # Local imports
 from models import (
@@ -23,8 +27,43 @@ from summary_generator import SummaryGenerator
 load_dotenv()
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+LOG_FILENAME = datetime.datetime.now().strftime('logs/logfile_%Y_%m_%d.log')
+logging.basicConfig(level=logging.INFO, filename=LOG_FILENAME)
+logger = logging.getLogger("uvicorn.access")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Initialize logging for the lifespan of the application
+    """
+    # Update IP address for dynamic DNS
+    try:
+        response = requests.get("http://api-ipv4.dynu.com/nic/update?hostname=resumeai.webredirect.org&password=cabf302eaec6a766e5bb5438ca748c0e")
+        logger.info(f"IP address updated: {response.text}")
+    except Exception as e:
+        logger.error(f"Error updating IP address: {str(e)}")
+            
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+    # to file
+    handler_file = logging.FileHandler(LOG_FILENAME)
+    handler_file.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+    logger.addHandler(handler_file)
+    logger.addHandler(handler)
+    yield
+    try:
+        logoff_ip = requests.get("http://api.dynu.com/nic/update?hostname=resumeai.webredirect.org&password=cabf302eaec6a766e5bb5438ca748c0e&offline=yes")
+        logger.info(f"IP address logged off: {logoff_ip.text}")
+    except Exception as e:
+        logger.error(f"Error logging off IP address: {str(e)}")
+        
+    logger.info("Shutting down...")
+    logger.removeHandler(handler)
+    logger.removeHandler(handler_file)
+    
+# create log folder if not existed
+if not os.path.exists('logs'):
+    os.makedirs('logs')
 
 # Initialize managers
 api_key_manager = APIKeyManager()
@@ -39,11 +78,12 @@ app = FastAPI(
     description="""
     AI-powered generator for:
     - Professional Cover Letters
-    - Project Descriptions for CV
+    - Summary and Project Descriptions for CV
     
     Built with FastAPI and Google's Gemini AI.
     """,
-    version="2.0.0"
+    version="2.1.0",
+    lifespan=lifespan
 )
 
 # Create API Key Header dependency
