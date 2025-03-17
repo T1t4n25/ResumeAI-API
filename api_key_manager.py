@@ -5,8 +5,8 @@ import logging
 from fastapi import HTTPException, Security
 from fastapi.security import APIKeyHeader
 class APIKeyManager:
-    def __init__(self):
-        self.logger = logging.getLogger("uvicorn.access")
+    def __init__(self, logger=None):
+        self.logger = logger
         self.valid_api_keys = self.load_or_generate_api_keys()
         self.api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
