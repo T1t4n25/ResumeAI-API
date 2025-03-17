@@ -4,10 +4,9 @@ import secrets
 import logging
 from fastapi import HTTPException, Security
 from fastapi.security import APIKeyHeader
-
 class APIKeyManager:
     def __init__(self):
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("uvicorn.access")
         self.valid_api_keys = self.load_or_generate_api_keys()
         self.api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
@@ -21,7 +20,7 @@ class APIKeyManager:
         # If no keys, generate a new one
         if not stored_keys or stored_keys == ['']:
             new_key = secrets.token_urlsafe(32)
-            print(f"🔑 New API Key Generated: {new_key}")
+            self.logger.info(f"🔑 New API Key Generated: {new_key}")
             os.environ['API_KEYS'] = new_key
             return [new_key]
         
