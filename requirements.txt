@@ -9,3 +9,4 @@ passlib
 python-multipart
 pytest
 httpx
+texsoup
