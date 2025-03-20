@@ -13,3 +13,4 @@ def set_test_environment():
     """
     # Set test-specific environment variables
     os.environ['GEMINI_API_KEY'] = 'test_api_key'
+    os.environ['DYNU_PASS'] = 'test_password'
