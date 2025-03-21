@@ -89,10 +89,10 @@ class UserInformation(BaseModel):
     name: str = Field(..., description="Full name")
     email: str = Field(..., description="Email address")
     phone: str = Field(..., description="Phone number")
-    address: str = Field(..., description="Physical address")
+    address: Optional[str] = Field(None, description="Physical address")
     linkedin: Optional[str] = Field(None, description="LinkedIn profile URL")
     github: Optional[str] = Field(None, description="GitHub profile URL")
-    summary: str = Field(..., description="Professional summary")
+    summary: Optional[str] = Field(None, description="Professional summary")
 
 class Education(BaseModel):
     institution: str = Field(..., description="Name of educational institution")
