@@ -66,10 +66,11 @@
     \end{tabular*}\vspace{-7pt}
 }
 
-\newcommand{\resumeSubSubheading}[2]{
-    \item
-    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
-      \textit{\small#1} & \textit{\small #2} \\
+\newcommand{\resumeEduSubheading}[4]{
+  \vspace{-2pt}\item
+    \begin{tabular*}{1.0\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & \textbf{\small #2} \\
+      \textit{\small#3} & \textit{\small #4} \\
     \end{tabular*}\vspace{-7pt}
 }
 
@@ -89,137 +90,108 @@
 \newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
 \newcommand{\resumeItemListStart}{\begin{itemize}}
 \newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
-
+\newcommand{\summaryPlaceholder}[1]{#1}
+\newcommand{\eduPlaceholder}[1]{#1}
+\newcommand{\projectsPlaceholder}[1]{#1}
+\newcommand{\expPlaceholder}[1]{#1}
+\newcommand{\infoPlaceholder}[1]{#1}
+\newcommand{\techSkillsPlaceholder}[1]{#1}
+\newcommand{\softSkillsPlaceholder}[1]{#1}
 \begin{document}
 
 \begin{center}
+  \infoPlaceholder{
     {\Huge \scshape Zeyad Hemeda} \\ \vspace{1pt}
     \small \raisebox{-0.1\height}\faPhone\ 01025726315 ~ \href{mailto:zeyad.mohammedwork@gmail.com}{\raisebox{-0.2\height}\faEnvelope\  \underline{zeyad.mohammedwork@gmail.com}} ~ 
     \href{https://linkedin.com/in/zeyad2511}{\raisebox{-0.2\height}\faLinkedin\ \underline{linkedin.com/in/zeyad2511}}  ~
     \href{https://github.com/T1t4n25}{\raisebox{-0.2\height}\faGithub\ \underline{github.com/T1t4n25}}
+  }
     \vspace{-8pt}
 \end{center}
 
 %-----------EDUCATION-----------
 \section{Education}
   \resumeSubHeadingListStart
-    \resumeSubheading
-      {Tanta University}{2022 -- Present}
-      {Bachelor of Computers and Informations, IT}{Tanta, Gharbia}
+  \eduPlaceholder{
+    \resumeEduSubheading
+    {Tanta University}{2022 -- Present}
+    {Bachelor of Computers and Informations, IT}{Tanta, Gharbia}
+  }
   \resumeSubHeadingListEnd
 
 %------RELEVANT COURSEWORK-------
-\section{Relevant Coursework}
-    \begin{multicols}{4}
-        \begin{itemize}[itemsep=-5pt, parsep=3pt]
-            \item\small Data Structures
-            \item Software Methodology
-            \item Algorithms Analysis
-            \item Database Management
-            \item Problem Solving
-            \item Operating Systems
-            \item Computer Architecture
-            \item Image Processing
-        \end{itemize}
-    \end{multicols}
-    \vspace*{2.0\multicolsep}
 
 %-----------SUMMARY-----------
 \section{Summary}
 \small{
+  \summaryPlaceholder{
 Aspiring software engineer with a strong foundation in backend development and a keen interest in building scalable web applications. Currently expanding skills in ASP.NET to enhance backend capabilities. Experienced in developing AI-powered applications and managing data-driven projects. Seeking a backend internship to apply and further develop technical skills in a dynamic environment.
+  }
 }
 \vspace{-10pt}
 
+%-----------Experience-----------
+\section{Experience}
+
+  \resumeSubHeadingListStart
+    \expPlaceholder{
+    \resumeSubheading
+      {Freelance Developer}{June 2021 -- Present}
+      {Freelance}{Tanta, Gharbia}
+      \resumeItemListStart
+        \resumeItem{Developed a web application for a local business to manage inventory and sales, increasing efficiency by 30\%.}
+        \resumeItem{Collaborated with a team of developers to build a mobile application for a local charity organization, increasing donations by 20\%.}
+        \resumeItem{Designed and implemented a website for a local restaurant, increasing online orders by 15\%.}
+      \resumeItemListEnd
+}
+  \resumeSubHeadingListEnd
+  \vspace{-16pt}
+
 %-----------PROJECTS-----------
 \section{Projects}
-    \vspace{-5pt}
-    \resumeSubHeadingListStart
+\vspace{-5pt}
+\resumeSubHeadingListStart
 
-\resumeProjectHeading
-{\textbf{ResumeAI} $|$ \emph{Python, FastAPI, Google Gemini AI, PyTest, Pydantic}}{January 2025}
-\resumeItemListStart
+\projectsPlaceholder{
+
+  \resumeProjectHeading
+    {\textbf{ResumeAI} $|$ \emph{Python, FastAPI, Google Gemini AI, PyTest, Pydantic}}{January 2025}
+    \resumeItemListStart
     \resumeItem{Built an advanced AI-powered application using FastAPI and Google's Gemini AI to generate personalized cover letters, CV summaries, and project descriptions.}
     \resumeItem{Implemented features for AI-driven, tailored content creation aligned with specific job postings and professional backgrounds, saving users 400\% of the time spent on writing cover letters and resume section.}
     \resumeItem{Developed comprehensive test files to validate the generated data and ensure the reliability of the API,
     which made the app generate 100\% better output.}
     \resumeItem{Deployed the application on \texttt{Railway.com} for scalable and efficient hosting.}
 
-\resumeItemListEnd
-    \vspace{-13pt}
+  \resumeItemListEnd
+  \vspace{-13pt}
+  }
+\resumeSubHeadingListEnd
 
-    \resumeProjectHeading
-    {\textbf{Olympic Cash Software} $|$ \emph{Java, JavaFX, SQL, CSS}}{September 2023}
-    \resumeItemListStart
-        \resumeItem{Created a system to track gym members' financial data and manage expenses and income, saving the gym owner more than 2 hours daily checking subscriptions and reviewing finances.}
-        \resumeItem{Integrated SQL queries with JavaFX for a seamless user interface experience making handling routine jobs 50\% more efficient.}
-        \resumeItem{Implemented CSS for a professional and user-friendly layout.}
-    \resumeItemListEnd
-    \vspace{-13pt}
-
-    \resumeProjectHeading
-    {\textbf{File Renaming Utility} $|$ \emph{Python, PyQt5, Natsort, Shutil}}{Date}
-    \resumeItemListStart
-        \resumeItem{Developed a cross-platform GUI tool for a construction company to batch rename, sort, and collect files of different formats.}
-        \resumeItem{Utilized PyQt5 for the user interface, ensuring ease of use for the team on both Windows and Mac.}
-        \resumeItem{Received excellent feedback from the client for the tool's functionality and user-friendliness.}
-    \resumeItemListEnd
-    \vspace{-13pt}
-
-    \resumeProjectHeading
-    {\textbf{CRC Algorithm Implementation} $|$ \emph{Python, Cryptography, Bit Manipulation}}{December 2023}
-    \resumeItemListStart
-        \resumeItem{Implemented the CRC algorithm from scratch using bit manipulation and logical operations.}
-        \resumeItem{Encrypted and decrypted data using cryptographic techniques integrated with CRC.}
-        \resumeItem{Designed a randomness effect to simulate data corruption, validating the CRC algorithm's accuracy.}
-    \resumeItemListEnd
-    \vspace{-13pt}
-
-    \resumeProjectHeading
-    {\textbf{STM32 Traffic Light with Timer} $|$ \emph{C, FreeRTOS, Embedded Systems, STM32, ARM}}{July 2024}
-    \resumeItemListStart
-        \resumeItem{Implemented a traffic light system using STM32F401RCT6 with FreeRTOS, utilizing 3 traffic light LEDs and a seven-segment display to show the countdown timer.}
-        \resumeItem{Edited drivers to interface peripherals with ARM architecture and enhanced real-time functionality using FreeRTOS tasks.}
-        \resumeItem{Focused on efficient scheduling and task handling to ensure seamless operation of the system.}
-    \resumeItemListEnd
-    \vspace{-13pt}
-
-    \resumeProjectHeading
-    {\textbf{Rate Monotonic Scheduler} $|$ \emph{C, Embedded Systems, AVR}}{April 2024}
-    \resumeItemListStart
-        \resumeItem{Implemented Rate Monotonic Scheduling on an AVR-based system, managing task priorities for real-time applications.}
-        \resumeItem{Applied the algorithm to schedule tasks in a time-sensitive project involving seven-segment displays and LEDs.}
-    \resumeItemListEnd
-    \vspace{-13pt}
-
-    \resumeProjectHeading
-    {\textbf{Mini-Photoshop} $|$ \emph{Python, OpenCV, Tkinter, MatplotLib, Skimage, Numpy}}{May 2024}
-    \resumeItemListStart
-        \resumeItem{Designed an easy-to-use interface program to apply OpenCV filters from the Image Processing course.}
-        \resumeItem{Added functionalities like opening and saving images, undo button, and stack filters and effects toggle button.}
-    \resumeItemListEnd 
-    \vspace{-13pt}
-
-    \resumeProjectHeading
-    {\textbf{Painter Lite} $|$ \emph{Python, Tkinter, Computational Geometry}}{January 2024}
-    \resumeItemListStart
-        \resumeItem{Developed a GUI application to draw shapes like polygons and circles using DDA algorithms.}
-        \resumeItem{Integrated features such as independent shape coloring, deletion, and undo functionalities.}
-        \resumeItem{Used a mathematical approach to track and manage shapes on the canvas.}
-    \resumeItemListEnd
-    \vspace{-13pt}
-
-    \resumeSubHeadingListEnd
 \vspace{-2pt}
 %-----------PROGRAMMING SKILLS-----------
 \section{Technical Skills}
  \begin{itemize}[leftmargin=0.15in, label={}]
+
     \small{\item{
+    \techSkillsPlaceholder{
      \textbf{Languages}{: Python, Java, C, C++, SQL, JavaScript, HTML/CSS} \\
      \textbf{Developer Tools}{: VS Code, GitHub, ATMEL Studio, PyCharm, IntelliJ, Docker, Postman} \\
      \textbf{Technologies/Frameworks}{: FastAPI, JavaFX, Tkinter, OpenCV, RTOS, PyQT5, RESTful APIs} \\
-    }}
+    }
+    }
+    }
  \end{itemize}
  \vspace{-16pt}
+
+ \section{Soft Skills}    
+    \begin{itemize}[leftmargin=0.15in, label={}]
+      \small{\item{
+      \softSkillsPlaceholder{
+        \emph{Problem Solving, Teamwork, Adaptability, Communication, Time Management, Creativity, Critical Thinking, Leadership, Work Ethic}
+      }
+        }}
+    \end{itemize}
+    \vspace{-10pt}
 
 \end{document}
