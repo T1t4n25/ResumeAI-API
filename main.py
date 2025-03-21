@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 from time import strftime
 import subprocess
 from pathlib import Path
-
+import json
 # Local imports
 from models import (
     CoverLetterRequest, 
@@ -187,94 +187,103 @@ async def create_resume(request: CreateResumeRequest):
     Generate a complete resume using LaTeX
     """
     logger.info(f"Received resume creation request for output format: {request.output_format}")
-    try:
-        # Fix: Access Pydantic model attributes using dot notation
-        user_id = f"{request.information.name}-" + strftime("%Y%m%d-%H%M%S")
-        output_dir = Path("generated_resumes")
-        output_dir.mkdir(exist_ok=True)
-        
-        if request.output_format == "tex":
-            resume_generator = ResumeTexGenerator(request=request, user_id=user_id)
-            tex_file = resume_generator.generate_tex()
-            return CreateResumeResponse(pdf_file=None, tex_file=tex_file)
-            
-        elif request.output_format == "pdf":
-            # Save TEX file first
-            resume_generator = ResumeTexGenerator(request=request, user_id=user_id)
-            tex_content = resume_generator.generate_tex()
-            tex_path = output_dir / f"{user_id}.tex"
-            tex_path.write_text(tex_content)
-            
-            # Compile PDF using subprocess
-            try:
-                subprocess.run([
-                    'latexmk',
-                    '-pdf',
-                    f'-jobname={user_id}',
-                    tex_path
-                ], cwd=output_dir, check=True, capture_output=True)
-                
-                pdf_path = output_dir / f"{user_id}.pdf"
-                if pdf_path.exists():
-                    pdf_content = pdf_path.read_bytes()
-                    # Clean up temporary files
-                    subprocess.run(['latexmk', '-c'], cwd=output_dir)
-                    return CreateResumeResponse(pdf_file=pdf_content, tex_file=None)
-                else:
-                    raise HTTPException(
-                        status_code=500,
-                        detail="PDF file was not generated"
-                    )
-                    
-            except subprocess.CalledProcessError as e:
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"LaTeX compilation failed: {e.stderr.decode()}"
-                )
-        elif request.output_format == "both":
-            # Save TEX file
-            resume_generator = ResumeTexGenerator(request=request, user_id=user_id)
-            tex_content = resume_generator.create_resume(request)
-            tex_path = output_dir / f"{user_id}.tex"
-            tex_path.write_text(tex_content)
+    #try:
+    # Fix: Access Pydantic model attributes using dot notation
+    request = json.loads(request.model_dump_json())
+    logger.debug(f"Request information dump: {request}")
+    user_id = f"{request["information"]["name"].replace(" ", '')}-" + strftime("%Y%m%d-%H%M%S")
 
-            # Compile PDF
-            try:
-                subprocess.run([
-                    'latexmk',
-                    '-pdf',
-                    f'-jobname={user_id}',
-                    tex_path
-                ], cwd=output_dir, check=True, capture_output=True)
-                
-                pdf_path = output_dir / f"{user_id}.pdf"
-                if pdf_path.exists():
-                    pdf_content = pdf_path.read_bytes()
-                    # Clean up temporary files
-                    subprocess.run(['latexmk', '-c'], cwd=output_dir)
-                    return CreateResumeResponse(pdf_file=pdf_content, tex_file=tex_content)
-                else:
-                    raise HTTPException(
-                        status_code=500,
-                        detail="PDF file was not generated"
-                    )
-                    
-            except subprocess.CalledProcessError as e:
+    output_dir = Path("generated_resumes")
+    output_dir.mkdir(exist_ok=True)
+    
+    if request['output_format'] == "tex":
+        resume_generator = ResumeTexGenerator(request=request, user_id=user_id)
+        tex_file = resume_generator.generate_tex()
+        return CreateResumeResponse(pdf_file=None, tex_file=tex_file)
+        
+    elif request['output_format'] == "pdf":
+        # Save TEX file first
+        resume_generator = ResumeTexGenerator(request=request, user_id=user_id)
+        tex_content = resume_generator.generate_tex()
+        tex_path = output_dir / f"{user_id}.tex"
+        
+        # Compile PDF using subprocess
+        try:
+            output_dir = Path(f"generated_resumes_{user_id}")
+            # output_dir = Path(f"generated_resumes_{user_id}")
+            output_dir.mkdir(exist_ok=True, parents=True)
+            
+            # Convert Path object to string for subprocess
+            working_dir = str(output_dir.absolute())
+            
+            subprocess.run([
+                'latexmk',
+                '-pdf',
+                '-f',
+                f'-jobname={user_id}',
+                f"{user_id}.tex"   # Convert Path to string
+            ], cwd=working_dir, check=True, capture_output=True, timeout=5)
+            
+            pdf_path = output_dir / f"{user_id}.pdf"
+            if pdf_path.exists():
+                pdf_content = pdf_path.read_bytes()
+                # Clean up temporary files
+                subprocess.run(['latexmk', '-c'], cwd=working_dir, check=True)
+                return CreateResumeResponse(pdf_file=pdf_content, tex_file=None)
+            else:
                 raise HTTPException(
                     status_code=500,
-                    detail=f"LaTeX compilation failed: {e.stderr.decode()}"
+                    detail="PDF file was not generated"
                 )
-        else:
+                
+        except subprocess.CalledProcessError as e:
             raise HTTPException(
-                status_code=400,
-                detail="Invalid output format specified"
+                status_code=500,
+                detail=f"LaTeX compilation failed: {e.stderr.decode()}"
             )
+    elif request['output_format'] == "both":
+        # Save TEX file
+        resume_generator = ResumeTexGenerator(request=request, user_id=user_id)
+        tex_content = resume_generator.generate_tex()
+        tex_path = output_dir / f"{user_id}.tex"
+
+        # Compile PDF
+        try:
+            subprocess.run([
+                'latexmk',
+                '-pdf',
+                f'-jobname={user_id}',
+                f"{user_id}.tex"
+            ], cwd=output_dir, check=True, capture_output=True)
             
-    except Exception as e:
+            pdf_path = output_dir / f"{user_id}.pdf"
+            if pdf_path.exists():
+                pdf_content = pdf_path.read_bytes()
+                # Clean up temporary files
+                subprocess.run(['latexmk', '-C'], cwd=output_dir)
+                return CreateResumeResponse(pdf_file=pdf_content, tex_file=tex_content)
+            else:
+                raise HTTPException(
+                    status_code=500,
+                    detail="PDF file was not generated"
+                )
+                
+        except subprocess.CalledProcessError as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"LaTeX compilation failed: {e.stderr.decode()}"
+            )
+    else:
         raise HTTPException(
-            status_code=500,
-            detail=f"Error generating resume: {str(e)}"
+            status_code=400,
+            detail="Invalid output format specified"
         )
+        
+    # except Exception as e:
+    #     raise HTTPException(
+    #         status_code=500,
+    #         detail=f"Error generating resume: {str(e)}"
+    #     )
 
 @app.get("/generate-api-key")
 def create_api_key():
