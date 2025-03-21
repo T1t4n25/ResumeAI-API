@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Any, List, Dict
+from typing import Optional, Any
 import base64
 
 class CoverLetterRequest(BaseModel):
@@ -85,68 +85,63 @@ class SummaryResponse(BaseModel):
         description="Generated professional summary for resume"
     )
     
-class UserInformation(BaseModel):
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    phone: str = Field(..., description="Phone number")
-    address: Optional[str] = Field(None, description="Physical address")
-    linkedin: Optional[str] = Field(None, description="LinkedIn profile URL")
-    github: Optional[str] = Field(None, description="GitHub profile URL")
-    summary: Optional[str] = Field(None, description="Professional summary")
-
-class Education(BaseModel):
-    institution: str = Field(..., description="Name of educational institution")
-    degree: str = Field(..., description="Degree obtained")
-    field: str = Field(..., description="Field of study")
-    start_date: str = Field(..., description="Start date of education")
-    end_date: str = Field(..., description="End date or expected completion")
-    gpa: Optional[str] = Field(None, description="GPA if applicable")
-
-class Project(BaseModel):
-    name: str = Field(..., description="Project name")
-    description: str = Field(..., description="Project description")
-    end_date: Any = Field(..., description="Project completion date")
-    technologies: Optional[List[str]] = Field(None, description="Technologies used")
-    url: Optional[str] = Field(None, description="Project URL if available")
-
-class Experience(BaseModel):
-    title: str = Field(..., description="Job title")
-    company: str = Field(..., description="Company name")
-    start_date: Any = Field(..., description="Start date of employment")
-    end_date: Any = Field(..., description="End date of employment or 'Present'")
-    description: str = Field(..., description="Job description and achievements")
-    location: Optional[str] = Field(None, description="Job location")
-
-class TechnicalSkills(BaseModel):
-    categories: Dict[str, List[str]] = Field(
+class CreateResumeRequest(BaseModel):
+    information: dict[str, str] = Field(
         ...,
-        description="Technical skills organized by categories",
+        description="User Information",
+        example={
+            "name": "John Doe",
+            "email": "example@gmail.com",
+            "phone": "01123456789",
+            "address": "123 Example Street",
+            "linkedin": "linkedin.com/in/example",
+            "github": "github.com/example",
+            "summary": "Software engineer with 5 years experience"
+        }
+    )
+    education: Optional[list[dict[str, str]]] = Field(
+        None,
+        description="List of educational qualifications",
+        example=[{
+            "degree": "BSc Computer Science",
+            "school": "Example University",
+            "start_date": '2016',
+            "end_date": '2020',
+            "location": 'Tanta, Egypt',
+            "gpa": '3.5'
+        }]
+    )
+    projects: Optional[list[dict[str, str]]] = Field(
+        None,
+        description="List of projects",
+        example=[{
+            "name": "Project Name",
+            "skills": "Python, FastAPI, Google Gemini AI, PyTest, Pydantic",
+            "description": "Project description",
+            "end_date": '2022'
+        }]
+    )
+    experience: Optional[list[dict[str, str]]] = Field(
+        None,
+        description="List of work experiences",
+        example=[{
+            "title": "Software Engineer",
+            "company": "Example Company",
+            "start_date": '2020',
+            "end_date": "Present",
+            "description": "Job description"
+        }]
+    )
+    technical_skills: Optional[dict[str, list[str]]] = Field(
+        None,
+        description="Technical skills with custom categories",
         example={
             "Programming Languages": ["Python", "Java"],
             "Tools": ["Git", "Docker"],
             "Other Skills": ["AWS", "Azure"]
         }
     )
-
-class CreateResumeRequest(BaseModel):
-    information: UserInformation
-    education: Optional[List[Education]] = Field(
-        None,
-        description="List of educational qualifications"
-    )
-    projects: Optional[List[Project]] = Field(
-        None,
-        description="List of projects"
-    )
-    experience: Optional[List[Experience]] = Field(
-        None,
-        description="List of work experiences"
-    )
-    technical_skills: Optional[TechnicalSkills] = Field(
-        None,
-        description="Technical skills with custom categories"
-    )
-    soft_skills: Optional[List[str]] = Field(
+    soft_skills: Optional[list] = Field(
         None,
         description="List of soft skills",
         example=["Communication", "Problem Solving"]
@@ -159,7 +154,7 @@ class CreateResumeRequest(BaseModel):
     )
 
 class CreateResumeResponse(BaseModel):
-    pdf_file: Optional[str] = Field(
+    pdf_file: Optional[bytes] = Field(
         None,
         description="Base64 encoded PDF file content"
     )
