@@ -189,7 +189,7 @@ async def create_resume(request: CreateResumeRequest):
     logger.info(f"Received resume creation request for output format: {request.output_format}")
     try:
         # Fix: Access Pydantic model attributes using dot notation
-        user_id = f"{request.information["name"]}-" + strftime("%Y%m%d-%H%M%S")
+        user_id = f"{request.information.name}-" + strftime("%Y%m%d-%H%M%S")
         output_dir = Path("generated_resumes")
         output_dir.mkdir(exist_ok=True)
         
