@@ -1,21 +1,22 @@
 from TexSoup import TexSoup
 from TexSoup.data import TexCmd, BraceGroup, Token
 import json
+import logging
 from models import CreateResumeRequest, CreateResumeResponse
-# Example usage
-payload = json.load(open('example_cv.json'))
 
 
 class ResumeTexGenerator:
     
-    def __init__(self, request: CreateResumeRequest, user_id: str):
+    def __init__(self, request, user_id: str):
+        logger = logging.getLogger("uvicorn")
         self.user_id = user_id
         self.payload = request
-        self.name= payload["information"]['name']
-        self.phone=payload["information"]["phone"]
-        self.email=payload["information"]["email"]
-        self.linkedin=payload["information"]["linkedin"]
-        self.github=payload["information"]["github"]
+        logger.info("payload inside:",self.payload)
+        self.name= self.payload["information"]['name']
+        self.phone=self.payload["information"]["phone"]
+        self.email=self.payload["information"]["email"]
+        self.linkedin=self.payload["information"]["linkedin"]
+        self.github=self.payload["information"]["github"]
         
     def fill_info(self, soup:TexSoup):
         # Create complete personal info section in one go
@@ -48,29 +49,29 @@ class ResumeTexGenerator:
         # Create Education Section
         edu = soup.find_all('eduPlaceholder')[1]
         edu.args.clear()
-        for edu_item in payload["education"]:
+        for edu_item in self.payload["education"]:
             new_edu = TexCmd('resumeEduSubheading', [
             BraceGroup(f'{edu_item["school"]}'),
             BraceGroup(f'{str(edu_item["start_date"]) + " - " + str(edu_item["end_date"])}'),
             BraceGroup(f'{edu_item["degree"]}'),
-            BraceGroup(f'{edu_item["location"]}')
+            BraceGroup('')
             ])
             edu.args.append(new_edu)
         
     def fill_summary(self, soup: TexSoup):
         summary = soup.find_all('summaryPlaceholder')[1]
-        sum_body = payload["information"]["summary"]
+        sum_body = self.payload["information"]["summary"]
         summary.args[0].string = sum_body
 
-    def fill_experience(soup: TexSoup):
+    def fill_experience(self, soup: TexSoup):
         experience = soup.find_all('expPlaceholder')[1]
         experience.args.clear()
-        for exp_item in payload["experience"]:
+        for exp_item in self.payload["experience"]:
             new_exp = TexCmd('resumeSubheading', [
                 BraceGroup(exp_item['title']),
                 BraceGroup(str(exp_item['start_date']) + " - " + str(exp_item['end_date'])),
                 BraceGroup(exp_item['company']),
-                BraceGroup(exp_item['location'])
+                BraceGroup('')
             ])
             achievements = [TexCmd('resumeItem', [BraceGroup(achievement + '.')]) 
                             for achievement in exp_item['description'].split('. ')]
@@ -82,7 +83,7 @@ class ResumeTexGenerator:
     def fill_projects(self, soup: TexSoup):
         projects = soup.find_all('projectsPlaceholder')[1]
         projects.args.clear()
-        for proj_item in payload["projects"]:
+        for proj_item in self.payload["projects"]:
             new_proj = TexCmd('resumeProjectHeading', [
                 BraceGroup(f'\\textbf{{{proj_item["name"]}}} $|$ \\emph{{{proj_item["skills"]}}}'),
                 BraceGroup(str(proj_item["end_date"]))
@@ -97,23 +98,18 @@ class ResumeTexGenerator:
     def fill_tech_skills(self, soup: TexSoup):
         tech_skills = soup.find_all('techSkillsPlaceholder')[1]
         tech_skills.args.clear()
-        skills_content = [
-            TexCmd('textbf', [BraceGroup('Languages')]),
-            BraceGroup(': ' + ', '.join(payload['technical_skills']['languages'])),
-            BraceGroup(' \\\\'),
-            TexCmd('textbf', [BraceGroup('Developer Tools')]),
-            BraceGroup(': ' + ', '.join(payload['technical_skills']['developer_tools'])),
-            BraceGroup(' \\\\'),
-            TexCmd('textbf', [BraceGroup('Technologies/Frameworks')]),
-            BraceGroup(': ' + ', '.join(payload['technical_skills']['frameworks'])),
-            BraceGroup(' \\\\')
-        ]
+        skills_content = []
+        for key, value in self.payload["technical_skills"].items():
+            skills_content.append(TexCmd('textbf', [BraceGroup(key)]))  
+            skills_content.append(BraceGroup(': ' + ', '.join(value)))
+            skills_content.append(BraceGroup(r' \\ '))
+        
         tech_skills.args.extend(skills_content)
 
     def fill_soft_skills(self, soup: TexSoup):
         soft_skills = soup.find_all('softSkillsPlaceholder')[1]
         soft_skills.args.clear()
-        soft_skills_content = TexCmd('emph', '{'+', '.join(payload['soft_skills']) + '}')
+        soft_skills_content = TexCmd('emph', '{'+', '.join(self.payload['soft_skills']) + '}')
         soft_skills.args.append(soft_skills_content)
 
     def generate_tex(self):
@@ -142,12 +138,9 @@ class ResumeTexGenerator:
             # Save changes
             with open(f'generated_resumes/{self.user_id}.tex', 'w') as f:
                 cleaned_output = str(soup).replace('section{}', 'section')
-                cleaned_output = (cleaned_output).replace(r'{{}\Huge', r'{\Huge')
-                cleaned_output = (cleaned_output).replace(r'Doe}{}}', r'Doe}}')
-                cleaned_output = (cleaned_output).replace(r'{ \\ }\vspace', r' \\ \vspace')
+                # cleaned_output = (cleaned_output).replace(r'{{}\Huge', r'{\Huge')
+                # cleaned_output = (cleaned_output).replace(r'Doe}{}}', r'Doe}}')
+                # cleaned_output = (cleaned_output).replace(r'{ \\ }\vspace', r' \\ \vspace')
                 f.write(cleaned_output)
+                return cleaned_output
             
-            # Return response with tex content
-            with open(f'generated_resumes/{self.user_id}.tex', 'r') as f:
-                tex_content = f.read()
-            return CreateResumeResponse(tex_file=tex_content)
