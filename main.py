@@ -228,7 +228,7 @@ async def create_resume(request: CreateResumeRequest):
             if pdf_path.exists():
                 pdf_content = pdf_path.read_bytes()
                 # Clean up temporary files
-                subprocess.run(['latexmk', '-c'], cwd=working_dir, check=True)
+                subprocess.run(['latexmk', '-C'], cwd=working_dir, check=True)
                 return CreateResumeResponse(pdf_file=pdf_content, tex_file=None)
             else:
                 raise HTTPException(
@@ -245,7 +245,6 @@ async def create_resume(request: CreateResumeRequest):
         # Save TEX file
         resume_generator = ResumeTexGenerator(request=request, user_id=user_id)
         tex_content = resume_generator.generate_tex()
-        tex_path = output_dir / f"{user_id}.tex"
 
         # Compile PDF
         try:
