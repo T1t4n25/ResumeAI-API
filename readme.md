@@ -7,9 +7,11 @@ A FastAPI-based backend service that leverages Google's Gemini AI to generate pr
 - **Cover Letter Generation**: Creates tailored cover letters based on job descriptions and user profiles
 - **Project Description Generation**: Crafts impactful project descriptions for resumes/CVs
 - **Professional Summary Generation**: Generates concise professional summaries
+- **Resume Final Form Compilation**: Takes all your data and generates a resume that's ATS Compliant
 - **Secure API Access**: Implementation of API key authentication
 - **Comprehensive Testing**: Includes unit tests with detailed validation
 - **Automated Documentation**: FastAPI-generated OpenAPI documentation
+- **Dynamic DNS**: Using Dynu free service to have a static domain name
 
 ## 🛠️ Tech Stack
 
@@ -19,6 +21,7 @@ A FastAPI-based backend service that leverages Google's Gemini AI to generate pr
 - **Authentication**: Custom API Key management
 - **Documentation**: OpenAPI (Swagger UI)
 - **Environment Management**: python-dotenv
+- **Resume Compilation**: TexSoup(LaTeX)
 
 ## 📋 Prerequisites
 
@@ -52,7 +55,7 @@ pip install -r requirements.txt
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key
-API_KEYS=your_initial_api_key  # Optional
+DYNU_PASS=your_hashed_password
 ```
 
 ## 🚀 Running the Application
@@ -142,21 +145,6 @@ The tests generate output files in:
 - `tests/generated_projects/`
 - `tests/generated_summaries/`
 
-## 📁 Project Structure
-
-```
-t1t4n25-generate-cover-letter-fast-api/
-├── api_key_manager.py      # API key management
-├── cover_letter_generator.py # Cover letter generation logic
-├── main.py                 # FastAPI application and routes
-├── models.py              # Pydantic models for requests/responses
-├── project_description_generator.py # Project description generation
-├── summary_generator.py    # Professional summary generation
-├── requirements.txt       # Project dependencies
-├── start.sh              # Startup script
-└── tests/                # Test suite
-```
-
 ## 🔒 Security Considerations
 
 - API keys are required for all main endpoints
@@ -178,9 +166,10 @@ t1t4n25-generate-cover-letter-fast-api/
 
 ## 👥 Authors
 
-- Zeyad Hemeda (@yourusername)
+- Zeyad Hemeda (@T1t4n25)
 
 ## 🙏 Acknowledgments
 
 - Google Gemini AI team for the powerful language model
 - FastAPI team for the excellent framework
+- Dynu for amazing service helping the team get a static url to the AWS ec2 instance server hosting
