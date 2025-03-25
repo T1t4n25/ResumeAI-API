@@ -22,7 +22,7 @@ class ResumeTexGenerator:
         # Create complete personal info section in one go
         info = soup.find_all('infoPlaceholder')[1]
         personal_info = [
-            r'{{}',TexCmd('Huge', [TexCmd('scshape', [BraceGroup(self.name)])]),r'{}}',
+            BraceGroup(TexCmd('Huge', [TexCmd('scshape', [BraceGroup(self.name)])])),
             BraceGroup(r' \\ '),
             TexCmd('vspace', [BraceGroup('1pt')]),
             TexCmd('small', [
