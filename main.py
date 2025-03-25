@@ -205,14 +205,9 @@ async def create_resume(request: CreateResumeRequest):
         # Save TEX file first
         resume_generator = ResumeTexGenerator(request=request, user_id=user_id)
         tex_content = resume_generator.generate_tex()
-        tex_path = output_dir / f"{user_id}.tex"
         
         # Compile PDF using subprocess
         try:
-            output_dir = Path(f"generated_resumes_{user_id}")
-            # output_dir = Path(f"generated_resumes_{user_id}")
-            output_dir.mkdir(exist_ok=True, parents=True)
-            
             # Convert Path object to string for subprocess
             working_dir = str(output_dir.absolute())
             
