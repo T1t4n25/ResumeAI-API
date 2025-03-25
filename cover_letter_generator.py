@@ -73,7 +73,7 @@ Generate a concise, impactful cover letter that goes straight to the professiona
             
             return {
                 "cover_letter": response.text,
-                "tokens_used": None  # Add token tracking if possible
+                "tokens_used": response.usage_metadata.total_token_count  # Add token tracking if possible
             }
         except Exception as e:
             raise ValueError(f"Cover letter generation failed: {str(e)}")
