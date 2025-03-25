@@ -1,4 +1,5 @@
 import os
+import shutil
 import logging
 from fastapi import FastAPI, Depends, HTTPException, Security
 from fastapi.middleware.cors import CORSMiddleware
@@ -196,6 +197,13 @@ async def create_resume(request: CreateResumeRequest):
     output_dir = Path("generated_resumes")
     output_dir.mkdir(exist_ok=True)
     
+    """Check if latexmk is available in the system PATH"""
+    latexmk_path = shutil.which('latexmk')
+    if not latexmk_path:
+        raise RuntimeError(
+            "latexmk is not installed. "
+            "Please install it using: sudo apt-get install latexmk"
+        )
     if request['output_format'] == "tex":
         resume_generator = ResumeTexGenerator(request=request, user_id=user_id)
         tex_file = resume_generator.generate_tex()
@@ -217,7 +225,7 @@ async def create_resume(request: CreateResumeRequest):
             working_dir = str(output_dir.absolute())
             
             subprocess.run([
-                'latexmk',
+                latexmk_path,
                 '-pdf',
                 '-f',
                 f'-jobname={user_id}',
@@ -249,7 +257,7 @@ async def create_resume(request: CreateResumeRequest):
         # Compile PDF
         try:
             subprocess.run([
-                'latexmk',
+                latexmk_path,
                 '-pdf',
                 f'-jobname={user_id}',
                 f"{user_id}.tex"
