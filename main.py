@@ -241,7 +241,7 @@ async def create_resume(request: CreateResumeRequest):
         resume_generator = ResumeTexGenerator(request=request, user_id=user_id)
         tex_content = resume_generator.generate_tex()
 
-        # Compile PDF
+        # Compile PDF 
         try:
             subprocess.run([
                 'latexmk',
