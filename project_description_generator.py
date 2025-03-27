@@ -36,6 +36,12 @@ class ProjectDescriptionGenerator:
         - Highlight the project's complexity and scope.
         - Incorporate relevant details from the additional context if provided.
         - Do not start the sentence with bullet points, numbers, or symbols.
+        - Use numerals for all numbers (e.g., "5 years", "40% improvement") - never spell out numbers
+        - Use achievement-focused language (delivered, implemented, spearheaded, orchestrated)
+        - Include quantifiable results
+        - Be specific and impactful
+        - Maintain professional tone
+        - Must include at least one measurable achievement
 
         **Example:**
         Developed a full-stack e-commerce platform using React and Firebase, integrated secure payment processing with Stripe, **increasing user transaction rates by 25%** and **improving page load times by 40%**.
