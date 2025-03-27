@@ -42,7 +42,7 @@ class ProjectDescriptionGenerator:
         - Be specific and impactful
         - Maintain professional tone
         - Must include at least one measurable achievement
-
+        
         **Example:**
         Developed a full-stack e-commerce platform using React and Firebase, integrated secure payment processing with Stripe, **increasing user transaction rates by 25%** and **improving page load times by 40%**.
 
