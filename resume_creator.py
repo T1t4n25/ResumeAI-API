@@ -1,8 +1,6 @@
 from TexSoup import TexSoup
 from TexSoup.data import TexCmd, BraceGroup, Token
-import json
 import logging
-from models import CreateResumeRequest, CreateResumeResponse
 
 
 class ResumeTexGenerator:
@@ -138,9 +136,6 @@ class ResumeTexGenerator:
             # Save changes
             with open(f'generated_resumes/{self.user_id}.tex', 'w') as f:
                 cleaned_output = str(soup).replace('section{}', 'section')
-                # cleaned_output = (cleaned_output).replace(r'{{}\Huge', r'{\Huge')
-                # cleaned_output = (cleaned_output).replace(r'Doe}{}}', r'Doe}}')
-                # cleaned_output = (cleaned_output).replace(r'{ \\ }\vspace', r' \\ \vspace')
                 f.write(cleaned_output)
                 return cleaned_output
             

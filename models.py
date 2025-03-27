@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Any
+from typing import Optional
 import base64
 
 class CoverLetterRequest(BaseModel):

@@ -1,7 +1,6 @@
 # api_key_manager.py
 import os
 import secrets
-import logging
 from fastapi import HTTPException, Security
 from fastapi.security import APIKeyHeader
 class APIKeyManager:
