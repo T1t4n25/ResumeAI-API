@@ -30,7 +30,8 @@ from resume_creator import ResumeTexGenerator
 
 # Load environment variables
 load_dotenv()
-
+output_dir = Path("logs")
+output_dir.mkdir(exist_ok=True)
 # Configure logging
 LOG_FILENAME = datetime.datetime.now().strftime('logs/logfile_%Y_%m_%d.log')
 logging.basicConfig(level=logging.INFO, filename=LOG_FILENAME)
