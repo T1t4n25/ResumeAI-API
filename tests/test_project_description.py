@@ -202,11 +202,8 @@ def test_project_description_generation(api_key, valid_payload):
         metadata={
             "Generated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "Response Time": f"{generation_time:.2f} seconds",
-            "API Version": "1.0.0",
-            "Model": "Gemini Pro",
-            "Temperature": "0.7",
-            "Max Tokens": "50"
-        }
+            "API Version": "3.0.0",
+            "Model": "Gemini Pro"        }
     )
     
     # Print summary
