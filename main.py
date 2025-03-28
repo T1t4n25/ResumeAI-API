@@ -199,8 +199,9 @@ async def create_resume(request: CreateResumeRequest):
     
     if request['output_format'] == "tex":
         resume_generator = ResumeTexGenerator(request=request, user_id=user_id)
-        tex_file = resume_generator.generate_tex()
-        return CreateResumeResponse(pdf_file=None, tex_file=tex_file)
+        tex_content = resume_generator.generate_tex()
+        os.remove(f"generated_resumes/{user_id}.tex")
+        return CreateResumeResponse(pdf_file=None, tex_file=tex_content)
         
     elif request['output_format'] == "pdf":
         # Save TEX file first
@@ -225,6 +226,7 @@ async def create_resume(request: CreateResumeRequest):
                 pdf_content = pdf_path.read_bytes()
                 # Clean up temporary files
                 subprocess.run(['latexmk', '-C'], cwd=working_dir, check=True)
+                os.remove(f"generated_resumes/{user_id}.tex")
                 return CreateResumeResponse(pdf_file=pdf_content, tex_file=None)
             else:
                 raise HTTPException(
@@ -256,6 +258,7 @@ async def create_resume(request: CreateResumeRequest):
                 pdf_content = pdf_path.read_bytes()
                 # Clean up temporary files
                 subprocess.run(['latexmk', '-C'], cwd=output_dir)
+                os.remove(f"generated_resumes/{user_id}.tex")
                 return CreateResumeResponse(pdf_file=pdf_content, tex_file=tex_content)
             else:
                 raise HTTPException(
