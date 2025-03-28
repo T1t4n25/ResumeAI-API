@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import ConfigDict, BaseModel, Field, field_serializer
 from typing import Optional
 import base64
 
@@ -6,28 +6,28 @@ class CoverLetterRequest(BaseModel):
     job_post: str = Field(
         ..., 
         description="Full job posting text",
-        example="Senior .NET Developer at TechInnovate Solutions. We are seeking an experienced .NET professional with strong skills in C#, .NET Core, and cloud technologies."
+        examples=["Senior .NET Developer at TechInnovate Solutions. We are seeking an experienced .NET professional with strong skills in C#, .NET Core, and cloud technologies."]
     )
     user_name: str = Field(
         ..., 
         description="Full name of the job applicant",
-        example="John Doe"
+        examples=["John Doe"]
     )
     user_degree: str = Field(
         description="Highest educational degree",
-        example="Bachelor of Science in Computer Science"
+        examples=["Bachelor of Science in Computer Science"]
     )
     user_title: str = Field(
         description="Current professional title",
-        example="Software Engineer"
+        examples=["Software Engineer"]
     )
     user_experience: str = Field(
         description="Professional experience summary",
-        example="5 years of professional .NET development experience"
+        examples=["5 years of professional .NET development experience"]
     )
     user_skills: str = Field(
         description="Relevant professional skills",
-        example="C#, .NET Core, Azure, SQL Server, RESTful APIs"
+        examples=["C#, .NET Core, Azure, SQL Server, RESTful APIs"]
     )
 
 class CoverLetterResponse(BaseModel):
@@ -38,17 +38,17 @@ class ProjectDescriptionRequest(BaseModel):
     project_name: str = Field(
         ..., 
         description="Name of the project",
-        example="E-commerce Website"
+        examples=["E-commerce Website"]
     )
     skills: str = Field(
         ...,
         description="Technologies and skills used in the project",
-        example="React, Firebase, Stripe, REST APIs"
+        examples=["React, Firebase, Stripe, REST APIs"]
     )
     project_description: Optional[str] = Field(
         None,
         description="Additional description of the project (optional)",
-        example="Built a website for an online store. Users can browse products, add to cart, and checkout."
+        examples=["Built a website for an online store. Users can browse products, add to cart, and checkout."]
     )
 
 class ProjectDescriptionResponse(BaseModel):
@@ -61,22 +61,22 @@ class SummaryRequest(BaseModel):
     current_title: str = Field(
         ..., 
         description="Your current job title",
-        example="Senior Software Engineer"
+        examples=["Senior Software Engineer"]
     )
     years_experience: str = Field(
         ...,
         description="Years of professional experience",
-        example="5+ years"
+        examples=["5+ years"]
     )
     skills: str = Field(
         ...,
         description="Key skills and technologies",
-        example="Python, React, AWS, Microservices"
+        examples=["Python, React, AWS, Microservices"]
     )
     achievements: Optional[str] = Field(
         None,
         description="Notable achievements or impacts (optional)",
-        example="Led team of 5, Reduced system latency by 40%"
+        examples=["Led team of 5, Reduced system latency by 40%"]
     )
 
 class SummaryResponse(BaseModel):
@@ -89,7 +89,7 @@ class CreateResumeRequest(BaseModel):
     information: dict[str, str] = Field(
         ...,
         description="User Information",
-        example={
+        examples=[{
             "name": "John Doe",
             "email": "example@gmail.com",
             "phone": "01123456789",
@@ -97,59 +97,59 @@ class CreateResumeRequest(BaseModel):
             "linkedin": "linkedin.com/in/example",
             "github": "github.com/example",
             "summary": "Software engineer with 5 years experience"
-        }
+        }]
     )
     education: Optional[list[dict[str, str]]] = Field(
         None,
         description="List of educational qualifications",
-        example=[{
+        examples=[[{
             "degree": "BSc Computer Science",
             "school": "Example University",
             "start_date": '2016',
             "end_date": '2020',
             "location": 'Tanta, Egypt',
             "gpa": '3.5'
-        }]
+        }]]
     )
     projects: Optional[list[dict[str, str]]] = Field(
         None,
         description="List of projects",
-        example=[{
+        examples=[[{
             "name": "Project Name",
             "skills": "Python, FastAPI, Google Gemini AI, PyTest, Pydantic",
             "description": "Project description",
             "end_date": '2022'
-        }]
+        }]]
     )
     experience: Optional[list[dict[str, str]]] = Field(
         None,
         description="List of work experiences",
-        example=[{
+        examples=[[{
             "title": "Software Engineer",
             "company": "Example Company",
             "start_date": '2020',
             "end_date": "Present",
             "description": "Job description"
-        }]
+        }]]
     )
     technical_skills: Optional[dict[str, list[str]]] = Field(
         None,
         description="Technical skills with custom categories",
-        example={
+        examples=[{
             "Programming Languages": ["Python", "Java"],
             "Tools": ["Git", "Docker"],
             "Other Skills": ["AWS", "Azure"]
-        }
+        }]
     )
     soft_skills: Optional[list] = Field(
         None,
         description="List of soft skills",
-        example=["Communication", "Problem Solving"]
+        examples=[["Communication", "Problem Solving"]]
     )
     output_format: str = Field(
         ...,
         description="Desired output format",
-        example="pdf",
+        examples=["pdf"],
         pattern="^(pdf|tex|both)$"
     )
 
@@ -162,8 +162,9 @@ class CreateResumeResponse(BaseModel):
         None,
         description="LaTeX source code as string"
     )
-
-    class Config:
-        json_encoders = {
-            bytes: lambda v: base64.b64encode(v).decode('utf-8')
-        }
+    
+    @field_serializer('pdf_file')
+    def serialize_pdf(self, pdf_file: Optional[bytes]) -> Optional[str]:
+        if pdf_file is None:
+            return None
+        return base64.b64encode(pdf_file).decode('utf-8')
