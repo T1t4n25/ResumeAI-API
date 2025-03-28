@@ -1,6 +1,7 @@
 import os
 import google.generativeai as genai
 from dotenv import load_dotenv
+from utility_func import reduce_tokens
 
 load_dotenv()
 
@@ -14,7 +15,7 @@ class CoverLetterGenerator:
         """
         Generate a cover letter using Gemini AI
         """
-        cover_letter_prompt = f"""
+        prompt = f"""
 Craft a professional cover letter using the provided job posting and candidate data. Focus solely on the essential content, eliminating any placeholder or template-style headers like addresses or contact information. 
 
 Job Posting Context:
@@ -69,7 +70,10 @@ Generate a concise, impactful cover letter that goes straight to the professiona
 """
 
         try:
-            response = self.model.generate_content(cover_letter_prompt)
+            # Reduce tokens in the prompt
+            prompt = reduce_tokens(prompt)
+            # Generate content using the model
+            response = self.model.generate_content(prompt)
             
             return {
                 "cover_letter": response.text,

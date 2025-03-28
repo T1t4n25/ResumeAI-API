@@ -1,6 +1,7 @@
 # summary_generator.py
 import google.generativeai as genai
 from models import SummaryRequest
+from utility_func import reduce_tokens
 
 class SummaryGenerator:
     def __init__(self, model_name="gemini-1.5-flash"):
@@ -45,6 +46,9 @@ class SummaryGenerator:
         """
 
         try:
+            # Reduce tokens in the prompt
+            prompt = reduce_tokens(prompt)
+            # Generate content using the model
             response = self.model.generate_content(prompt)
             return response.text.strip()
         except Exception as e:

@@ -1,6 +1,7 @@
 # project_description_generator.py
 import google.generativeai as genai
 from models import ProjectDescriptionRequest
+from utility_func import *
 
 class ProjectDescriptionGenerator:
     def __init__(self, model_name="gemini-1.5-flash"):
@@ -36,6 +37,7 @@ class ProjectDescriptionGenerator:
         - Highlight the project's complexity and scope.
         - Incorporate relevant details from the additional context if provided.
         - Do not start the sentence with bullet points, numbers, or symbols.
+        - don't use ordinal numbers in text form (first , second, etc.) use numerals (1st, 2nd, etc.)
         - Use numerals for all numbers (e.g., "5 years", "40% improvement") - never spell out numbers
         - Use achievement-focused language (delivered, implemented, spearheaded, orchestrated)
         - Include quantifiable results
@@ -49,6 +51,9 @@ class ProjectDescriptionGenerator:
         **Now, write the sentence following the above instructions.**
         """
         try:
+            # Reduce tokens in the prompt
+            prompt = reduce_tokens(prompt)
+            # Generate content using the model
             response = self.model.generate_content(prompt)
             return response.text.strip()
         except Exception as e:
