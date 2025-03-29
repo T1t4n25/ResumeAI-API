@@ -17,6 +17,9 @@ class ResumeTexGenerator:
         self.github=self.payload["information"]["github"]
         
     def fill_info(self, soup:TexSoup):
+        """
+        Fills the personal information section of the resume template.
+        """
         # Create complete personal info section in one go
         info = soup.find_all('infoPlaceholder')[1]
         personal_info = [
@@ -57,6 +60,9 @@ class ResumeTexGenerator:
             edu.args.append(new_edu)
         
     def fill_summary(self, soup: TexSoup):
+        """
+        Fills the summary section of the resume template.
+        """
         summary = soup.find_all('summaryPlaceholder')[1]
         sum_body = self.payload["information"]["summary"]
         summary.args[0].string = sum_body
@@ -79,6 +85,9 @@ class ResumeTexGenerator:
             experience.args.extend(full_exp_entry)
 
     def fill_projects(self, soup: TexSoup):
+        """
+        Fills the projects section of the resume template.
+        """
         projects = soup.find_all('projectsPlaceholder')[1]
         projects.args.clear()
         for proj_item in self.payload["projects"]:
@@ -94,6 +103,9 @@ class ResumeTexGenerator:
             projects.args.extend(full_proj_entry)
 
     def fill_tech_skills(self, soup: TexSoup):
+        """
+        Fills the technical skills section of the resume template.
+        """
         tech_skills = soup.find_all('techSkillsPlaceholder')[1]
         tech_skills.args.clear()
         skills_content = []
@@ -111,6 +123,10 @@ class ResumeTexGenerator:
         soft_skills.args.append(soft_skills_content)
 
     def generate_tex(self):
+        """
+        Generates the LaTeX code for the resume using the provided data.
+        The generated LaTeX code is saved to a file and returned as a string.
+        """
         with open('latex_templates/1.tex') as f:
             soup = TexSoup(f, tolerance=1)
             

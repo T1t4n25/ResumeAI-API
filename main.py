@@ -85,7 +85,7 @@ app = FastAPI(
     - Summary and Project Descriptions for CV
     - Create Resume using LaTeX
     
-    Built with FastAPI and Google's Gemini AI.
+    Built with FastAPI, Google's Gemini AI and LaTeX.
     """,
     version="3.0.0",
     lifespan=lifespan
