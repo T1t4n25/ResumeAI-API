@@ -98,12 +98,19 @@ def test_summary_generation(api_key, test_payload):
     print("\nTesting Summary Generation")
     print("="*80)
     
+    # Start timing
+    start_time = time.time()
+    
     # Generate summary
     response = client.post(
         "/generate-summary",
         json=test_payload,
         headers={"X-API-Key": api_key}
     )
+    
+    # Calculate response time
+    response_time = time.time() - start_time
+    print(f"\nResponse Time: {response_time:.2f} seconds")
     
     # Check response status
     assert response.status_code == 200, f"API call failed with status {response.status_code}: {response.text}"
@@ -132,14 +139,14 @@ def test_summary_generation(api_key, test_payload):
             "Achievements": test_payload.get("achievements", "Not provided"),
             "Word Count": word_count,
             "Generation Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "Status": "Generated - Pending Validation"
+            "Response Time": f"{response_time:.2f} seconds"
         }
     )
     
     assert filename is not None, "Failed to save summary"
     print(f"\nSaved to: {filename}")
     
- # Split validations into required and best practices
+    # Split validations into required and best practices
     required_validations = {
         "Word Count": (40 <= word_count <= 75, f"Word count {word_count} outside range 40-75"),
         "Professional Identity": (
