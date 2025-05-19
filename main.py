@@ -1,6 +1,6 @@
 import os
 import logging
-from fastapi import FastAPI, Depends, HTTPException, Security
+from fastapi import FastAPI, Depends, HTTPException, Security, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 from dotenv import load_dotenv
@@ -88,7 +88,8 @@ app = FastAPI(
     Built with FastAPI, Google's Gemini AI and LaTeX.
     """,
     version="3.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    root_path="/api/resume-flow"
 )
 
 # Create API Key Header dependency
