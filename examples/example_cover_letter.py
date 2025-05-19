@@ -1,7 +1,7 @@
 import requests
 
 # Replace with your API endpoint URL
-PROD_URL = "http://127.0.0.1:8000"
+PROD_URL = ""
 
 def test_simple_request():
     # First, get an API key
