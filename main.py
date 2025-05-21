@@ -23,9 +23,9 @@ from models import (
     CreateResumeResponse
 )
 from api_key_manager import APIKeyManager
-from cover_letter_generator import CoverLetterGenerator
-from project_description_generator import ProjectDescriptionGenerator
-from summary_generator import SummaryGenerator
+from generation_endpoints.cover_letter_generator import CoverLetterGenerator
+from generation_endpoints.project_description_generator import ProjectDescriptionGenerator
+from generation_endpoints.summary_generator import SummaryGenerator
 from resume_creator import ResumeTexGenerator
 
 # Load environment variables

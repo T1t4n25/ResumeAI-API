@@ -4,7 +4,7 @@ from models import SummaryRequest
 from utility_func import reduce_tokens
 
 class SummaryGenerator:
-    def __init__(self, model_name="gemini-1.5-flash"):
+    def __init__(self, model_name="gemini-2.0-flash-lite"):
         self.model = genai.GenerativeModel(model_name)
 
     def generate_summary(self, request: SummaryRequest) -> str:
