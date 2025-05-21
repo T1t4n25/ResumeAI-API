@@ -8,7 +8,7 @@ client = TestClient(app)
 @pytest.fixture
 def api_key():
     """Get API key for testing"""
-    response = client.get("/generate-api-key")
+    response = client.get("/api/resume-flow/generate-api-key")
     assert response.status_code == 200, "Failed to generate API key"
     return response.json()["api_key"]
 
@@ -74,7 +74,7 @@ def cleanup_output():
             os.remove(os.path.join(output_dir, file))
 
 def test_create_resume_pdf_success(test_data, auth_headers, cleanup_output):
-    response = client.post("/create-resume", 
+    response = client.post("/api/resume-flow/create-resume", 
                           json=test_data,
                           headers=auth_headers)
     
@@ -83,7 +83,7 @@ def test_create_resume_pdf_success(test_data, auth_headers, cleanup_output):
 
 def test_create_resume_tex_success(test_data, auth_headers, cleanup_output):
     test_data["output_format"] = "tex"
-    response = client.post("/create-resume", 
+    response = client.post("/api/resume-flow/create-resume", 
                           json=test_data,
                           headers=auth_headers)
     
@@ -91,7 +91,7 @@ def test_create_resume_tex_success(test_data, auth_headers, cleanup_output):
     assert "tex_file" in response.json()
 
 def test_create_resume_unauthorized(test_data):
-    response = client.post("/create-resume", 
+    response = client.post("/api/resume-flow/create-resume", 
                           json=test_data,
                           headers={"X-API-Key": "invalid-key"})
     assert response.status_code == 403
@@ -105,7 +105,7 @@ def test_create_resume_invalid_data(auth_headers):
         "output_format": "pdf"
     }
     
-    response = client.post("/create-resume", 
+    response = client.post("/api/resume-flow/create-resume", 
                           json=invalid_data,
                           headers=auth_headers)
     assert response.status_code == 422

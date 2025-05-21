@@ -185,13 +185,13 @@ def test_cover_letter_generation(valid_payload):
     print("="*80)
     
     # Get API key
-    api_key_response = client.get("/generate-api-key")
+    api_key_response = client.get("/api/resume-flow/generate-api-key")
     api_key = api_key_response.json()["api_key"]
     
     # Generate cover letter
     start_time = time.time()
     response = client.post(
-        "/generate-cover-letter", 
+        "/api/resume-flow/generate-cover-letter", 
         json=valid_payload,
         headers={"X-API-Key": api_key}
     )
@@ -237,7 +237,7 @@ def test_cover_letter_generation(valid_payload):
 def test_invalid_api_key(valid_payload):
     """Test with invalid API key"""
     response = client.post(
-        "/generate-cover-letter",
+        "/api/resume-flow/generate-cover-letter",
         json=valid_payload,
         headers={"X-API-Key": "invalid_key"}
     )
@@ -245,7 +245,7 @@ def test_invalid_api_key(valid_payload):
 
 def test_missing_fields(valid_payload):
     """Test missing required fields"""
-    api_key_response = client.get("/generate-api-key")
+    api_key_response = client.get("/api/resume-flow/generate-api-key")
     api_key = api_key_response.json()["api_key"]
     
     required_fields = ["job_post", "user_name", "user_degree", 
@@ -256,7 +256,7 @@ def test_missing_fields(valid_payload):
         del incomplete_payload[field]
         
         response = client.post(
-            "/generate-cover-letter",
+            "/api/resume-flow/generate-cover-letter",
             json=incomplete_payload,
             headers={"X-API-Key": api_key}
         )
@@ -265,6 +265,6 @@ def test_missing_fields(valid_payload):
 
 def test_health_check():
     """Test health check endpoint"""
-    response = client.get("/health")
+    response = client.get("/api/resume-flow/health")
     assert response.status_code == 200
     assert response.json() == {"status": "healthy"}

@@ -31,7 +31,7 @@ ACTION_VERBS = [
 @pytest.fixture
 def api_key():
     """Get API key for testing"""
-    response = client.get("/generate-api-key")
+    response = client.get("/api/resume-flow/generate-api-key")
     assert response.status_code == 200, "Failed to generate API key"
     return response.json()["api_key"]
 
@@ -177,7 +177,7 @@ def test_project_description_generation(api_key, valid_payload):
     # Generate project description
     start_time = time.time()
     response = client.post(
-        "/generate-project-description",
+        "/api/resume-flow/generate-project-description",
         json=valid_payload,
         headers={"X-API-Key": api_key}
     )
@@ -223,7 +223,7 @@ def test_project_description_generation(api_key, valid_payload):
 def test_invalid_api_key(valid_payload):
     """Test with invalid API key"""
     response = client.post(
-        "/generate-project-description",
+        "/api/resume-flow/generate-project-description",
         json=valid_payload,
         headers={"X-API-Key": "invalid_key"}
     )
@@ -240,7 +240,7 @@ def test_missing_fields(api_key):
     for payload, case in test_cases:
         print(f"\nTesting: {case}")
         response = client.post(
-            "/generate-project-description",
+            "/api/resume-flow/generate-project-description",
             json=payload,
             headers={"X-API-Key": api_key}
         )
@@ -255,7 +255,7 @@ def test_response_time(api_key, valid_payload):
     
     start_time = time.time()
     response = client.post(
-        "/generate-project-description",
+        "/api/resume-flow/generate-project-description",
         json=valid_payload,
         headers={"X-API-Key": api_key}
     )
@@ -271,6 +271,6 @@ def test_response_time(api_key, valid_payload):
 
 def test_health_check():
     """Test health check endpoint"""
-    response = client.get("/health")
+    response = client.get("/api/resume-flow/health")
     assert response.status_code == 200
     assert response.json() == {"status": "healthy"}
