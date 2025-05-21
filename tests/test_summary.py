@@ -79,7 +79,7 @@ def save_summary(summary: str, metadata: dict) -> str:
 @pytest.fixture
 def api_key():
     """Get API key for testing"""
-    response = client.get("/generate-api-key")
+    response = client.get("/api/resume-flow/generate-api-key")
     assert response.status_code == 200, "Failed to generate API key"
     return response.json()["api_key"]
 
@@ -103,7 +103,7 @@ def test_summary_generation(api_key, test_payload):
     
     # Generate summary
     response = client.post(
-        "/generate-summary",
+        "/api/resume-flow/generate-summary",
         json=test_payload,
         headers={"X-API-Key": api_key}
     )

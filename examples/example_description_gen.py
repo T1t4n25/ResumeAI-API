@@ -1,7 +1,7 @@
 import requests
 
 # Replace with your API endpoint URL
-API_URL = "http://127.0.0.1:8000"  # or your production URL
+API_URL = ""  # or your production URL
 
 def test_generate_project_description():
     # If your API requires an API key, obtain it here
