@@ -1,7 +1,7 @@
 from TexSoup import TexSoup
 from TexSoup.data import TexCmd, BraceGroup, Token
 import logging
-
+import os
 
 class ResumeTexGenerator:
     
@@ -150,6 +150,7 @@ class ResumeTexGenerator:
                 self.fill_soft_skills(soup)
             
             # Save changes
+            os.makedirs('generated_resumes', exist_ok=True)
             with open(f'generated_resumes/{self.user_id}.tex', 'w') as f:
                 cleaned_output = str(soup).replace('section{}', 'section')
                 f.write(cleaned_output)
