@@ -167,7 +167,7 @@ async def generate_project_description(
 
 @app.post("/generate-summary", 
           response_model=SummaryResponse,
-          dependencies=[Depends(api_key_manager.validate_api_key)])
+          dependencies=[Security(api_key_manager.validate_api_key)])
 async def generate_summary(request: SummaryRequest):
     """
     Generate a professional summary for resume
@@ -290,8 +290,8 @@ def create_api_key():
     Generate a new API key
     In production, add authentication/authorization
     """
-    new_key = api_key_manager.generate_new_api_key()
-    return {"api_key": new_key}
+    
+    return {"api_key": "Not Wotking Now dx"}
 
 @app.get("/health")
 def health_check():
