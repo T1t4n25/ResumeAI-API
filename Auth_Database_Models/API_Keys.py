@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, TIMESTAMP, Boolean, text, Foreig
 from sqlalchemy.orm import relationship
 from Auth_Database_Models.Base import Base
 
+
 class ApiKey(Base):
     __tablename__ = "api_keys"
 
@@ -12,3 +13,6 @@ class ApiKey(Base):
     
     # Relationship to user
     user = relationship("User", back_populates="api_keys")
+    
+    def to_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
