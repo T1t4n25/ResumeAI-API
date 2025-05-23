@@ -11,6 +11,8 @@ from time import strftime
 import subprocess
 from pathlib import Path
 import json
+import secrets
+import hashlib
 # Local imports
 from models import (
     CoverLetterRequest, 
@@ -27,11 +29,13 @@ from generation_endpoints.cover_letter_generator import CoverLetterGenerator
 from generation_endpoints.project_description_generator import ProjectDescriptionGenerator
 from generation_endpoints.summary_generator import SummaryGenerator
 from resume_creator import ResumeTexGenerator
+from Auth_DataBase.auth_database import AuthDatabase
 
 # Load environment variables
 load_dotenv()
 output_dir = Path("logs")
 output_dir.mkdir(exist_ok=True)
+
 # Configure logging
 LOG_FILENAME = datetime.datetime.now().strftime('logs/logfile_%Y_%m_%d.log')
 logging.basicConfig(level=logging.INFO, filename=LOG_FILENAME)
@@ -69,12 +73,33 @@ async def lifespan(app: FastAPI):
 if not os.path.exists('logs'):
     os.makedirs('logs')
 
+# Initialize components
 api_key_manager = APIKeyManager(logger=logger)
+auth_db = AuthDatabase()
 cover_letter_generator = CoverLetterGenerator()
 project_description_generator = ProjectDescriptionGenerator()
 summary_generator = SummaryGenerator()
-summary_generator = SummaryGenerator()
 
+# Define API Key security scheme
+api_key_header = APIKeyHeader(
+    name="X-API-Key",
+    description="API Key for authentication. Include your API key in the X-API-Key header."
+)
+
+# Security dependency function
+async def get_api_key(api_key: str = Security(api_key_header)) -> str:
+    """
+    Validate API key using Security instead of Depends.
+    This provides better OpenAPI documentation and security handling.
+    """
+    # Use your existing validation logic
+    if not api_key_manager.validate_api_key(api_key):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or missing API key",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+    return api_key
 
 # Create FastAPI app
 app = FastAPI(
@@ -86,14 +111,19 @@ app = FastAPI(
     - Create Resume using LaTeX
     
     Built with FastAPI, Google's Gemini AI and LaTeX.
+    
+    ## Authentication
+    All protected endpoints require an API key in the `X-API-Key` header.
+    
+    ## Getting Started
+    1. Register a new user account
+    2. Use the returned API key for authenticated requests
+    3. Include the API key in the `X-API-Key` header for all protected endpoints
     """,
     version="3.0.0",
     lifespan=lifespan,
     root_path="/api/resume-flow"
 )
-
-# Create API Key Header dependency
-api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 # CORS Middleware
 app.add_middleware(
@@ -104,62 +134,152 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-async def get_api_key(api_key: str = Security(api_key_header)):
+# Authentication endpoints
+@app.post("/auth/register", tags=["Authentication"])
+async def register_user(username: str, password: str):
     """
-    API Key validation dependency
+    Register a new user and generate their first API key
     """
-    if not api_key:
-        raise HTTPException(
-            status_code=403, 
-            detail="Could not validate credentials"
-        )
-    
-    # Use the API key manager to validate
     try:
-        if api_key not in api_key_manager.valid_api_keys:
-            raise HTTPException(
-                status_code=403, 
-                detail="Invalid API key"
-            )
-        return api_key
-    except Exception:
+        # Hash the password
+        password_hash = hashlib.sha256(password.encode()).hexdigest()
+        
+        # Create user
+        user_id = auth_db.create_user(username, password_hash)
+        
+        # Generate API key for the user
+        api_key = api_key_manager.generate_new_api_key(user_id)
+        
+        logger.info(f"New user registered: {username} with ID: {user_id}")
+        
+        return {
+            "message": "User registered successfully",
+            "user_id": user_id,
+            "api_key": api_key
+        }
+    except Exception as e:
+        logger.error(f"Registration failed for {username}: {str(e)}")
         raise HTTPException(
-            status_code=403, 
-            detail="Could not validate credentials"
+            status_code=400,
+            detail=f"Registration failed: {str(e)}"
         )
 
+@app.post("/auth/generate-api-key", tags=["Authentication"])
+async def generate_api_key(username: str, password: str):
+    """
+    Generate a new API key for existing user
+    """
+    try:
+        # Hash the password to check
+        password_hash = hashlib.sha256(password.encode()).hexdigest()
+        
+        # Find user by username
+        user = auth_db.get_user_by_username(username)
+        
+        if not user or user['password_hash'] != password_hash:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid credentials"
+            )
+        
+        # Generate new API key
+        api_key = api_key_manager.generate_new_api_key(user['id'])
+        
+        logger.info(f"New API key generated for user: {username}")
+        
+        return {
+            "message": "API key generated successfully",
+            "api_key": api_key
+        }
+    except HTTPException:
+        raise
+    # except Exception as e:
+    #     logger.error(f"API key generation failed for {username}: {str(e)}")
+    #     raise HTTPException(
+    #         status_code=500,
+    #         detail=f"API key generation failed: {str(e)}"
+    #     )
 
+@app.get("/auth/my-api-keys", tags=["Authentication"])
+async def get_my_api_keys(api_key: str = Security(get_api_key)):
+    """
+    Get all API keys for the authenticated user
+    """
+    try:
+        user = api_key_manager.get_user_from_api_key(api_key)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        api_keys = auth_db.get_user_api_keys(user['id'])
+        
+        return {
+            "user_id": user['id'],
+            "username": user['username'],
+            "api_keys": [
+                {
+                    "api_key": key['api_key'][:8] + "...",  # Show only first 8 chars for security
+                    "created_at": key['created_at'].strftime("%Y-%m-%d %H:%M:%S")
+                }
+                for key in api_keys
+            ]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting API keys: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving API keys: {str(e)}"
+        )
+
+# Protected endpoints
 @app.post("/generate-cover-letter", 
-          response_model=CoverLetterResponse)
+          response_model=CoverLetterResponse,
+          tags=["Content Generation"])
 async def generate_cover_letter(
     request: CoverLetterRequest,
-    api_key: str = Depends(api_key_manager.validate_api_key)
+    api_key: str = Security(get_api_key)
 ):
     """
     Generate a personalized cover letter
+    
+    Requires valid API key in X-API-Key header.
     """
     try:
+        # Log API usage
+        user = api_key_manager.get_user_from_api_key(api_key)
+        logger.info(f"Cover letter generation requested by user: {user['username'] if user else 'Unknown'}")
+        
         result = cover_letter_generator.generate_cover_letter(request)
         return result
     except Exception as e:
+        logger.error(f"Error generating cover letter: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Error generating cover letter: {str(e)}"
         )
 
 @app.post("/generate-project-description", 
-          response_model=ProjectDescriptionResponse)
+          response_model=ProjectDescriptionResponse,
+          tags=["Content Generation"])
 async def generate_project_description(
     request: ProjectDescriptionRequest,
-    api_key: str = Depends(api_key_manager.validate_api_key)
+    api_key: str = Security(get_api_key)
 ):
     """
     Generate a professional project description for CV
+    
+    Requires valid API key in X-API-Key header.
     """
     try:
+        # Log API usage
+        user = api_key_manager.get_user_from_api_key(api_key)
+        logger.info(f"Project description generation requested by user: {user['username'] if user else 'Unknown'}")
+        
         description = project_description_generator.generate_description(request)
         return {"project_description": description}
     except Exception as e:
+        logger.error(f"Error generating project description: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Error generating project description: {str(e)}"
@@ -167,15 +287,25 @@ async def generate_project_description(
 
 @app.post("/generate-summary", 
           response_model=SummaryResponse,
-          dependencies=[Security(api_key_manager.validate_api_key)])
-async def generate_summary(request: SummaryRequest):
+          tags=["Content Generation"])
+async def generate_summary(
+    request: SummaryRequest,
+    api_key: str = Security(get_api_key)
+):
     """
     Generate a professional summary for resume
+    
+    Requires valid API key in X-API-Key header.
     """
     try:
+        # Log API usage
+        user = api_key_manager.get_user_from_api_key(api_key)
+        logger.info(f"Summary generation requested by user: {user['username'] if user else 'Unknown'}")
+        
         summary = summary_generator.generate_summary(request)
         return {"summary": summary}
     except Exception as e:
+        logger.error(f"Error generating summary: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Error generating summary: {str(e)}"
@@ -183,30 +313,37 @@ async def generate_summary(request: SummaryRequest):
 
 @app.post("/create-resume", 
          response_model=CreateResumeResponse,
-         dependencies=[Depends(api_key_manager.validate_api_key)])
-async def create_resume(request: CreateResumeRequest):
+         tags=["Content Generation"])
+async def create_resume(
+    request: CreateResumeRequest,
+    api_key: str = Security(get_api_key)
+):
     """
     Generate a complete resume using LaTeX
+    
+    Requires valid API key in X-API-Key header.
     """
-    logger.info(f"Received resume creation request for output format: {request.output_format}")
     try:
-
-        request = json.loads(request.model_dump_json())
-        logger.debug(f"Request information dump: {request}")
-        user_id = request["information"]["name"].replace(" ", '') + "-" + strftime("%Y%m%d-%H%M%S")
+        # Log API usage
+        user = api_key_manager.get_user_from_api_key(api_key)
+        logger.info(f"Resume creation requested by user: {user['username'] if user else 'Unknown'} for output format: {request.output_format}")
+        
+        request_dict = json.loads(request.model_dump_json())
+        logger.debug(f"Request information dump: {request_dict}")
+        user_id = request_dict["information"]["name"].replace(" ", '') + "-" + strftime("%Y%m%d-%H%M%S")
 
         output_dir = Path("generated_resumes")
         output_dir.mkdir(exist_ok=True)
         
-        if request['output_format'] == "tex":
-            resume_generator = ResumeTexGenerator(request=request, user_id=user_id)
+        if request_dict['output_format'] == "tex":
+            resume_generator = ResumeTexGenerator(request=request_dict, user_id=user_id)
             tex_content = resume_generator.generate_tex()
             os.remove(f"generated_resumes/{user_id}.tex")
             return CreateResumeResponse(pdf_file=None, tex_file=tex_content)
             
-        elif request['output_format'] == "pdf":
+        elif request_dict['output_format'] == "pdf":
             # Save TEX file first
-            resume_generator = ResumeTexGenerator(request=request, user_id=user_id)
+            resume_generator = ResumeTexGenerator(request=request_dict, user_id=user_id)
             tex_content = resume_generator.generate_tex()
             
             # Compile PDF using subprocess
@@ -219,7 +356,7 @@ async def create_resume(request: CreateResumeRequest):
                     '-pdf',
                     '-f',
                     f'-jobname={user_id}',
-                    f"{user_id}.tex"   # Convert Path to string
+                    f"{user_id}.tex"
                 ], cwd=working_dir, check=True, capture_output=True, timeout=5)
                 
                 pdf_path = output_dir / f"{user_id}.pdf"
@@ -240,9 +377,9 @@ async def create_resume(request: CreateResumeRequest):
                     status_code=500,
                     detail=f"LaTeX compilation failed: {e.stderr.decode()}"
                 )
-        elif request['output_format'] == "both":
+        elif request_dict['output_format'] == "both":
             # Save TEX file
-            resume_generator = ResumeTexGenerator(request=request, user_id=user_id)
+            resume_generator = ResumeTexGenerator(request=request_dict, user_id=user_id)
             tex_content = resume_generator.generate_tex()
 
             # Compile PDF 
@@ -278,27 +415,37 @@ async def create_resume(request: CreateResumeRequest):
                 detail="Invalid output format specified"
             )
         
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Error generating resume: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Error generating resume: {str(e)}"
         )
 
-@app.get("/generate-api-key")
-def create_api_key():
-    """
-    Generate a new API key
-    In production, add authentication/authorization
-    """
-    
-    return {"api_key": "Not Wotking Now dx"}
-
-@app.get("/health")
+# Public endpoints
+@app.get("/health", tags=["Health"])
 def health_check():
     """
     Simple health check endpoint
     """
     return {"status": "healthy"}
+
+@app.get("/", tags=["Info"])
+def root():
+    """
+    Root endpoint with API information
+    """
+    return {
+        "message": "Resume Flow API",
+        "version": "3.0.0",
+        "endpoints": {
+            "auth": ["/auth/register", "/auth/generate-api-key", "/auth/my-api-keys"],
+            "protected": ["/generate-cover-letter", "/generate-project-description", "/generate-summary", "/create-resume"],
+            "public": ["/health", "/"]
+        }
+    }
 
 if __name__ == "__main__":
     import uvicorn
