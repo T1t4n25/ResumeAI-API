@@ -489,3 +489,4 @@ TSWLatexianTemp*
 # Uncomment the next line to have this generated file ignored.
 #*Notes.bib
 dynamic-dns.sh
+test_api_auth.py
