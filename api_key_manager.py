@@ -57,7 +57,11 @@ class APIKeyManager:
         Get the user associated with the provided API key
         """
         try:
-            user = self.auth_db.get_user_by_api_key(api_key)
+            user_obj = self.auth_db.get_user_by_api_key(api_key)
+            user = {
+                "id": user_obj['id'],
+                "username": user_obj['username'],
+            }
             return user
         except Exception as e:
             if self.logger:
