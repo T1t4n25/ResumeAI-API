@@ -9,3 +9,5 @@ class User(Base):
     password_hash = Column(String(255),unique=True,nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('CURRENT_TIMESTAMP'))
     api_keys = relationship("ApiKey", back_populates="user")
+    def to_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
