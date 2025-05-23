@@ -120,7 +120,7 @@ app = FastAPI(
     2. Use the returned API key for authenticated requests
     3. Include the API key in the `X-API-Key` header for all protected endpoints
     """,
-    version="3.0.0",
+    version="4.0.0",
     lifespan=lifespan,
     root_path="/api/resume-flow"
 )
@@ -439,7 +439,7 @@ def root():
     """
     return {
         "message": "Resume Flow API",
-        "version": "3.0.0",
+        "version": "4.0.0",
         "endpoints": {
             "auth": ["/auth/register", "/auth/generate-api-key", "/auth/my-api-keys"],
             "protected": ["/generate-cover-letter", "/generate-project-description", "/generate-summary", "/create-resume"],
