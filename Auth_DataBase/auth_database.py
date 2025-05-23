@@ -14,7 +14,7 @@ class AuthDatabase:
 
     def __init__(self):
         load_dotenv()
-        
+
         # Configure connection pool explicitly for better control
         self.engine = create_engine(
             os.getenv('DATABASE_URL'),
@@ -26,9 +26,9 @@ class AuthDatabase:
             pool_pre_ping=True,    # Validate connections before use
             echo=False             # Set to True for SQL debugging
         )
-        
+
         self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
-        
+
         # Create all tables if they don't exist
         Base.metadata.create_all(bind=self.engine)
 
@@ -57,29 +57,39 @@ class AuthDatabase:
             yield db
         finally:
             db.close()
-    
+
     def check_api_key(self, api_key: str) -> bool:
         """
         Check if the provided API key is valid.
         """
         with self.get_db_session() as db:
             api_key_entry = db.query(ApiKey).filter(ApiKey.api_key == api_key).first()
-            return api_key_entry is not None
-    
+            api_key = True if api_key_entry != None else False
+            return api_key
+
     def get_user_by_api_key(self, api_key: str):
         """
         Get the user associated with the provided API key.
         """
         with self.get_db_session() as db:
-            return db.query(User).join(ApiKey).filter(ApiKey.api_key == api_key).first()
-    
+            user_obj = db.query(User).join(ApiKey).filter(ApiKey.api_key == api_key).first()
+            user = user_obj.to_dict() if user_obj else None
+            return user
+
     def get_user_api_keys(self, user_id: int):
         """
         Get all API keys associated with the provided user ID.
         """
         with self.get_db_session() as db:
-            return db.query(ApiKey).filter(ApiKey.user_id == user_id).all()
-    
+            api_keys = db.query(ApiKey).filter(ApiKey.user_id == user_id).all()
+            if not api_keys:
+                return None
+            #serialize the objects to dictionary containing all data
+            api_keys = [api_key.to_dict() for api_key in api_keys]
+            
+                
+            return api_keys
+
     def create_user(self, username: str, password_hash: str):
         """
         Create a new user.
@@ -89,9 +99,10 @@ class AuthDatabase:
             db.add(user)
             db.flush()  # Get ID without committing yet
             db.refresh(user)
-            return user
-            # Commit happens automatically in context manager
-    
+            user_id= user.id
+
+            return user_id
+
     def create_api_key(self, user_id: int, api_key: str):
         """
         Create a new API key for a user.
@@ -101,14 +112,22 @@ class AuthDatabase:
             db.add(api_key_obj)
             db.flush()
             db.refresh(api_key_obj)
-            return api_key_obj
+            
+            return api_key
 
     def get_user_by_username(self, username: str):
         """
         Get user by username.
         """
         with self.get_db_session() as db:
-            return db.query(User).filter(User.username == username).first()
+            user_obj = db.query(User).filter(User.username == username).first()
+            user = {
+                "id": user_obj.id,
+                "username": user_obj.username,
+                "password_hash": user_obj.password_hash
+            } if user_obj else None
+            return user
+            
 
     def delete_api_key(self, api_key: str) -> bool:
         """
