@@ -28,7 +28,6 @@ from api_key_manager import APIKeyManager
 from generation_endpoints.cover_letter_generator import CoverLetterGenerator
 from generation_endpoints.project_description_generator import ProjectDescriptionGenerator
 from generation_endpoints.summary_generator import SummaryGenerator
-from resume_creator import ResumeTexGenerator
 from Auth_DataBase.auth_database import AuthDatabase
 
 # Load environment variables
@@ -37,13 +36,8 @@ output_dir = Path("logs")
 output_dir.mkdir(exist_ok=True)
 
 # Configure logging
-LOG_FILENAME = datetime.datetime.now().strftime('logs/logfile_%Y_%m_%d.log')
-logging.basicConfig(level=logging.INFO, filename=LOG_FILENAME)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("uvicorn")
-
-handler_file = logging.FileHandler(LOG_FILENAME)
-handler_file.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
-logger.addHandler(handler_file)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -66,12 +60,7 @@ async def lifespan(app: FastAPI):
         logger.error(f"Error logging off IP address: {str(e)}")
         
     logger.info("Shutting down...")
-    logger.removeHandler(handler_file)
-    handler_file.close()
     
-# create log folder if not existed
-if not os.path.exists('logs'):
-    os.makedirs('logs')
 
 # Initialize components
 api_key_manager = APIKeyManager(logger=logger)
@@ -311,119 +300,6 @@ async def generate_summary(
             detail=f"Error generating summary: {str(e)}"
         )
 
-@app.post("/create-resume", 
-         response_model=CreateResumeResponse,
-         tags=["Content Generation"])
-async def create_resume(
-    request: CreateResumeRequest,
-    api_key: str = Security(get_api_key)
-):
-    """
-    Generate a complete resume using LaTeX
-    
-    Requires valid API key in X-API-Key header.
-    """
-    try:
-        # Log API usage
-        user = api_key_manager.get_user_from_api_key(api_key)
-        logger.info(f"Resume creation requested by user: {user['username'] if user else 'Unknown'} for output format: {request.output_format}")
-        
-        request_dict = json.loads(request.model_dump_json())
-        logger.debug(f"Request information dump: {request_dict}")
-        user_id = request_dict["information"]["name"].replace(" ", '') + "-" + strftime("%Y%m%d-%H%M%S")
-
-        output_dir = Path("generated_resumes")
-        output_dir.mkdir(exist_ok=True)
-        
-        if request_dict['output_format'] == "tex":
-            resume_generator = ResumeTexGenerator(request=request_dict, user_id=user_id)
-            tex_content = resume_generator.generate_tex()
-            os.remove(f"generated_resumes/{user_id}.tex")
-            return CreateResumeResponse(pdf_file=None, tex_file=tex_content)
-            
-        elif request_dict['output_format'] == "pdf":
-            # Save TEX file first
-            resume_generator = ResumeTexGenerator(request=request_dict, user_id=user_id)
-            tex_content = resume_generator.generate_tex()
-            
-            # Compile PDF using subprocess
-            try:
-                # Convert Path object to string for subprocess
-                working_dir = str(output_dir.absolute())
-                
-                subprocess.run([
-                    'latexmk',
-                    '-pdf',
-                    '-f',
-                    f'-jobname={user_id}',
-                    f"{user_id}.tex"
-                ], cwd=working_dir, check=True, capture_output=True, timeout=5)
-                
-                pdf_path = output_dir / f"{user_id}.pdf"
-                if pdf_path.exists():
-                    pdf_content = pdf_path.read_bytes()
-                    # Clean up temporary files
-                    subprocess.run(['latexmk', '-C'], cwd=working_dir, check=True)
-                    os.remove(f"generated_resumes/{user_id}.tex")
-                    return CreateResumeResponse(pdf_file=pdf_content, tex_file=None)
-                else:
-                    raise HTTPException(
-                        status_code=500,
-                        detail="PDF file was not generated"
-                    )
-                    
-            except subprocess.CalledProcessError as e:
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"LaTeX compilation failed: {e.stderr.decode()}"
-                )
-        elif request_dict['output_format'] == "both":
-            # Save TEX file
-            resume_generator = ResumeTexGenerator(request=request_dict, user_id=user_id)
-            tex_content = resume_generator.generate_tex()
-
-            # Compile PDF 
-            try:
-                subprocess.run([
-                    'latexmk',
-                    '-pdf',
-                    f'-jobname={user_id}',
-                    f"{user_id}.tex"
-                ], cwd=output_dir, check=True, capture_output=True)
-                
-                pdf_path = output_dir / f"{user_id}.pdf"
-                if pdf_path.exists():
-                    pdf_content = pdf_path.read_bytes()
-                    # Clean up temporary files
-                    subprocess.run(['latexmk', '-C'], cwd=output_dir)
-                    os.remove(f"generated_resumes/{user_id}.tex")
-                    return CreateResumeResponse(pdf_file=pdf_content, tex_file=tex_content)
-                else:
-                    raise HTTPException(
-                        status_code=500,
-                        detail="PDF file was not generated"
-                    )
-                    
-            except subprocess.CalledProcessError as e:
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"LaTeX compilation failed: {e.stderr.decode()}"
-                )
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid output format specified"
-            )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error generating resume: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error generating resume: {str(e)}"
-        )
-
 # Public endpoints
 @app.get("/health", tags=["Health"])
 def health_check():
@@ -442,7 +318,7 @@ def root():
         "version": "4.0.0",
         "endpoints": {
             "auth": ["/auth/register", "/auth/generate-api-key", "/auth/my-api-keys"],
-            "protected": ["/generate-cover-letter", "/generate-project-description", "/generate-summary", "/create-resume"],
+            "protected": ["/generate-cover-letter", "/generate-project-description", "/generate-summary"],
             "public": ["/health", "/"]
         }
     }
