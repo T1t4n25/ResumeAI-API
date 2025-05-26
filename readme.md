@@ -77,7 +77,6 @@ brew install --cask mactex
 GEMINI_API_KEY=your_gemini_api_key
 DATABASE_URL=postgresql://username:password@localhost:5432/resume_db
 DYNU_PASS=your_dynu_password
-PORT=8000
 ```
 
 ## 🗄️ Database Setup
