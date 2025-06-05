@@ -228,7 +228,7 @@ async def get_my_api_keys(api_key: str = Security(get_api_key)):
                     "api_key": key['api_key'][:8] + "...",  # Show only first 8 chars for security
                     "created_at": key['created_at'].strftime("%Y-%m-%d %H:%M:%S")
                 }
-                for key in api_keys
+                for key in api_keys # For each key, create a dictionary with id, api_key (truncated), and created_at
             ]
         }
     except HTTPException:
