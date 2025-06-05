@@ -168,3 +168,75 @@ class CreateResumeResponse(BaseModel):
         if pdf_file is None:
             return None
         return base64.b64encode(pdf_file).decode('utf-8')
+    
+class RegisterUserRequest(BaseModel):
+    username: str = Field(
+        ...,
+        description="Username for the account",
+        examples=["johndoe"]
+    )
+    password: str = Field(
+        ...,
+        description="Password for the account",
+        examples=["securepassword123"]
+    )
+
+class RegisterUserResponse(BaseModel):
+    message: str = Field(
+        ...,
+        description="Confirmation message for successful registration",
+        examples=["User registered successfully"]
+    )
+    api_key: str = Field(
+        ...,
+        description="API key for accessing the service",
+        examples=["your_generated_api_key"]
+    )
+
+class GenerateAPIKeyRequest(BaseModel):
+    username: str = Field(
+        ...,
+        description="Username for which to generate the API key",
+        examples=["johndoe"]
+    )
+    password: str = Field(
+        ...,
+        description="Password for the account",
+        examples=["securepassword123"]
+    )
+
+class GenerateAPIKeyResponse(BaseModel):
+    message: str = Field(
+        ...,
+        description="Confirmation message for successful API key generation",
+        examples=["API key generated successfully"]
+    )
+    api_key: str = Field(
+        ...,
+        description="Generated API key for accessing the service",
+        examples=["your_generated_api_key"]
+    )
+
+class GetAPIKeysRequest(BaseModel):
+    api_key: str = Field(
+        ...,
+        description="API key for authentication",
+        examples=["your_generated_api_key"]
+    )
+    
+class GetAPIKeysResponse(BaseModel):
+    username: str = Field(
+        ...,
+        description="Username associated with the API key",
+        examples=["johndoe"]
+    )
+    api_keys: list[dict[str, str]] = Field(
+        ...,
+        description="List of API keys associated with the user",
+        examples=[[{
+            "id": "1",
+            "api_key": "1BCDEFG8...",
+            "created_at": "2023-10-01T12:00:00Z"
+        }]]
+    )
+
