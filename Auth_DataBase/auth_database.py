@@ -97,7 +97,7 @@ class AuthDatabase:
         with self.get_db_session() as db:
             user = User(username=username, password_hash=password_hash)
             db.add(user)
-            db.flush()  # Get ID without committing yet
+            db.flush()
             db.refresh(user)
             user_id= user.id
 
