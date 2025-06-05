@@ -201,12 +201,12 @@ async def generate_api_key(username: str, password: str):
         }
     except HTTPException:
         raise
-    # except Exception as e:
-    #     logger.error(f"API key generation failed for {username}: {str(e)}")
-    #     raise HTTPException(
-    #         status_code=500,
-    #         detail=f"API key generation failed: {str(e)}"
-    #     )
+    except Exception as e:
+        logger.error(f"API key generation failed for {username}: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"API key generation failed: {str(e)}"
+        )
 
 @app.get("/auth/my-api-keys", tags=["Authentication"])
 async def get_my_api_keys(api_key: str = Security(get_api_key)):
