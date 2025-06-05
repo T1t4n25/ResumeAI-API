@@ -1,8 +1,12 @@
 import os
 import logging
-from fastapi import FastAPI, Depends, HTTPException, Security
+from fastapi import FastAPI, Depends, HTTPException, Security, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
 from dotenv import load_dotenv
 import requests
 import datetime
@@ -11,7 +15,6 @@ from time import strftime
 import subprocess
 from pathlib import Path
 import json
-import secrets
 import hashlib
 # Local imports
 from models import (
@@ -36,6 +39,9 @@ load_dotenv()
 output_dir = Path("logs")
 output_dir.mkdir(exist_ok=True)
 
+# Initialize rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
 # Configure logging
 LOG_FILENAME = datetime.datetime.now().strftime('logs/logfile_%Y_%m_%d.log')
 logging.basicConfig(level=logging.INFO, filename=LOG_FILENAME)
@@ -57,7 +63,12 @@ async def lifespan(app: FastAPI):
         logger.info(f"IP address updated: {response.text}")
     except Exception as e:
         logger.error(f"Error updating IP address: {str(e)}")
-            
+        
+    # Limiter setup
+    
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
     yield
     try:
         logoff_ip = requests.get(f"http://api.dynu.com/nic/update?hostname=resumeai.webredirect.org&password={os.getenv('DYNU_PASS')}&offline=yes")
@@ -89,10 +100,8 @@ api_key_header = APIKeyHeader(
 # Security dependency function
 async def get_api_key(api_key: str = Security(api_key_header)) -> str:
     """
-    Validate API key using Security instead of Depends.
-    This provides better OpenAPI documentation and security handling.
+    Validate API key using Security
     """
-    # Use your existing validation logic
     if not api_key_manager.validate_api_key(api_key):
         raise HTTPException(
             status_code=401,
@@ -154,7 +163,6 @@ async def register_user(username: str, password: str):
         
         return {
             "message": "User registered successfully",
-            "user_id": user_id,
             "api_key": api_key
         }
     except Exception as e:
@@ -213,10 +221,10 @@ async def get_my_api_keys(api_key: str = Security(get_api_key)):
         api_keys = auth_db.get_user_api_keys(user['id'])
         
         return {
-            "user_id": user['id'],
             "username": user['username'],
             "api_keys": [
                 {
+                    "id": str(key['id']),
                     "api_key": key['api_key'][:8] + "...",  # Show only first 8 chars for security
                     "created_at": key['created_at'].strftime("%Y-%m-%d %H:%M:%S")
                 }
@@ -236,8 +244,10 @@ async def get_my_api_keys(api_key: str = Security(get_api_key)):
 @app.post("/generate-cover-letter", 
           response_model=CoverLetterResponse,
           tags=["Content Generation"])
+@limiter.limit("5/minute")
 async def generate_cover_letter(
-    request: CoverLetterRequest,
+    request: Request,
+    user_data: CoverLetterRequest,
     api_key: str = Security(get_api_key)
 ):
     """
@@ -250,7 +260,7 @@ async def generate_cover_letter(
         user = api_key_manager.get_user_from_api_key(api_key)
         logger.info(f"Cover letter generation requested by user: {user['username'] if user else 'Unknown'}")
         
-        result = cover_letter_generator.generate_cover_letter(request)
+        result = cover_letter_generator.generate_cover_letter(user_data)
         return result
     except Exception as e:
         logger.error(f"Error generating cover letter: {str(e)}")
@@ -262,8 +272,10 @@ async def generate_cover_letter(
 @app.post("/generate-project-description", 
           response_model=ProjectDescriptionResponse,
           tags=["Content Generation"])
+@limiter.limit("5/minute")
 async def generate_project_description(
-    request: ProjectDescriptionRequest,
+    request: Request,
+    user_data: ProjectDescriptionRequest,
     api_key: str = Security(get_api_key)
 ):
     """
@@ -276,7 +288,7 @@ async def generate_project_description(
         user = api_key_manager.get_user_from_api_key(api_key)
         logger.info(f"Project description generation requested by user: {user['username'] if user else 'Unknown'}")
         
-        description = project_description_generator.generate_description(request)
+        description = project_description_generator.generate_description(user_data)
         return {"project_description": description}
     except Exception as e:
         logger.error(f"Error generating project description: {str(e)}")
@@ -288,8 +300,10 @@ async def generate_project_description(
 @app.post("/generate-summary", 
           response_model=SummaryResponse,
           tags=["Content Generation"])
+@limiter.limit("5/minute")
 async def generate_summary(
-    request: SummaryRequest,
+    request: Request,
+    user_data: SummaryRequest,
     api_key: str = Security(get_api_key)
 ):
     """
@@ -302,7 +316,7 @@ async def generate_summary(
         user = api_key_manager.get_user_from_api_key(api_key)
         logger.info(f"Summary generation requested by user: {user['username'] if user else 'Unknown'}")
         
-        summary = summary_generator.generate_summary(request)
+        summary = summary_generator.generate_summary(user_data)
         return {"summary": summary}
     except Exception as e:
         logger.error(f"Error generating summary: {str(e)}")
@@ -314,8 +328,10 @@ async def generate_summary(
 @app.post("/create-resume", 
          response_model=CreateResumeResponse,
          tags=["Content Generation"])
+@limiter.limit("5/minute")
 async def create_resume(
-    request: CreateResumeRequest,
+    request: Request,
+    user_data: CreateResumeRequest,
     api_key: str = Security(get_api_key)
 ):
     """
@@ -326,9 +342,9 @@ async def create_resume(
     try:
         # Log API usage
         user = api_key_manager.get_user_from_api_key(api_key)
-        logger.info(f"Resume creation requested by user: {user['username'] if user else 'Unknown'} for output format: {request.output_format}")
+        logger.info(f"Resume creation requested by user: {user['username'] if user else 'Unknown'} for output format: {user_data.output_format}")
         
-        request_dict = json.loads(request.model_dump_json())
+        request_dict = json.loads(user_data.model_dump_json())
         logger.debug(f"Request information dump: {request_dict}")
         user_id = request_dict["information"]["name"].replace(" ", '') + "-" + strftime("%Y%m%d-%H%M%S")
 
@@ -426,14 +442,16 @@ async def create_resume(
 
 # Public endpoints
 @app.get("/health", tags=["Health"])
-def health_check():
+@limiter.limit("6/minute")
+def health_check(request: Request):
     """
     Simple health check endpoint
     """
     return {"status": "healthy"}
 
 @app.get("/", tags=["Info"])
-def root():
+@limiter.limit("6/minute")
+def root(request: Request):
     """
     Root endpoint with API information
     """
