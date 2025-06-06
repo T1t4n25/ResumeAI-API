@@ -93,7 +93,7 @@ async def check_api_key(api_key: str = Security(api_key_header)) -> str:
     """
     Validate API key using Security
     """
-    if not api_key_manager.validate_api_key(api_key):
+    if not await api_key_manager.validate_api_key(api_key):
         raise HTTPException(
             status_code=401,
             detail="Invalid or missing API key",
