@@ -23,7 +23,7 @@ class ProjectDescriptionGenerator:
 
         prompt = f"""
         **Task:**
-        Create a professional and impactful sentence for a CV/resume based on the following information.
+        Create a professional and impactful project description for a CV/resume based on the following information.
 
         **Project Details:**
         {context}
