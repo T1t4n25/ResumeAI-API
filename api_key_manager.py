@@ -42,7 +42,7 @@ class APIKeyManager:
         is_valid = self.auth_db.check_api_key(api_key)
         if not is_valid:
             if self.logger:
-                self.logger.error(f"Invalid API key attempted: {api_key[:8]}...")
+                self.logger.error(f"Invalid API key attempted: {api_key}") # No need to truncate an invalid API key
             raise HTTPException(
                 status_code=403,
                 detail="Invalid API key"
