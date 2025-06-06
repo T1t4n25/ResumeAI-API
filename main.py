@@ -17,16 +17,7 @@ from pathlib import Path
 import json
 import hashlib
 # Local imports
-from models import (
-    CoverLetterRequest, 
-    CoverLetterResponse, 
-    ProjectDescriptionRequest, 
-    ProjectDescriptionResponse,
-    SummaryRequest,
-    SummaryResponse,
-    CreateResumeRequest,
-    CreateResumeResponse
-)
+from models import *
 from api_key_manager import APIKeyManager
 from generation_endpoints.cover_letter_generator import CoverLetterGenerator
 from generation_endpoints.project_description_generator import ProjectDescriptionGenerator
@@ -98,7 +89,7 @@ api_key_header = APIKeyHeader(
 )
 
 # Security dependency function
-async def get_api_key(api_key: str = Security(api_key_header)) -> str:
+async def check_api_key(api_key: str = Security(api_key_header)) -> str:
     """
     Validate API key using Security
     """
@@ -144,45 +135,56 @@ app.add_middleware(
 )
 
 # Authentication endpoints
-@app.post("/auth/register", tags=["Authentication"])
-async def register_user(username: str, password: str):
+@app.post("/auth/register", tags=["Authentication"], response_model=RegisterUserResponse)
+@limiter.limit("3/minute")
+async def register_user(request: Request, user_data: RegisterUserRequest):
     """
     Register a new user and generate their first API key
     """
     try:
+        # Check for existing user
+        if auth_db.get_user_by_username(user_data.username):
+            raise HTTPException(
+                status_code=409,
+                detail="Username already exists"
+            )
+            
         # Hash the password
-        password_hash = hashlib.sha256(password.encode()).hexdigest()
+        password_hash = hashlib.sha256(user_data.password.encode()).hexdigest()
         
         # Create user
-        user_id = auth_db.create_user(username, password_hash)
+        user_id = auth_db.create_user(user_data.username, password_hash)
         
         # Generate API key for the user
         api_key = api_key_manager.generate_new_api_key(user_id)
         
-        logger.info(f"New user registered: {username} with ID: {user_id}")
+        logger.info(f"New user registered: {user_data.username} with ID: {user_id}")
         
         return {
             "message": "User registered successfully",
             "api_key": api_key
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Registration failed for {username}: {str(e)}")
+        logger.error(f"Registration failed for {user_data.username}: {str(e)}")
         raise HTTPException(
             status_code=400,
             detail=f"Registration failed: {str(e)}"
         )
 
-@app.post("/auth/generate-api-key", tags=["Authentication"])
-async def generate_api_key(username: str, password: str):
+@app.post("/auth/generate-api-key", tags=["Authentication"], response_model=GenerateAPIKeyResponse)
+@limiter.limit("3/minute")
+async def generate_api_key(request: Request, user_data: GenerateAPIKeyRequest):
     """
     Generate a new API key for existing user
     """
     try:
         # Hash the password to check
-        password_hash = hashlib.sha256(password.encode()).hexdigest()
+        password_hash = hashlib.sha256(user_data.password.encode()).hexdigest()
         
         # Find user by username
-        user = auth_db.get_user_by_username(username)
+        user = auth_db.get_user_by_username(user_data.username)
         
         if not user or user['password_hash'] != password_hash:
             raise HTTPException(
@@ -193,7 +195,7 @@ async def generate_api_key(username: str, password: str):
         # Generate new API key
         api_key = api_key_manager.generate_new_api_key(user['id'])
         
-        logger.info(f"New API key generated for user: {username}")
+        logger.info(f"New API key generated for user: {user_data.username}")
         
         return {
             "message": "API key generated successfully",
@@ -202,16 +204,19 @@ async def generate_api_key(username: str, password: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"API key generation failed for {username}: {str(e)}")
+        logger.error(f"API key generation failed for {user_data.username}: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"API key generation failed: {str(e)}"
         )
 
-@app.get("/auth/my-api-keys", tags=["Authentication"])
-async def get_my_api_keys(api_key: str = Security(get_api_key)):
+@app.get("/auth/my-api-keys", tags=["Authentication"], response_model=GetAPIKeysResponse)
+@limiter.limit("3/minute")
+async def get_my_api_keys(request: Request, api_key: str = Security(check_api_key)):
     """
     Get all API keys for the authenticated user
+    
+    Requires valid API key in X-API-Key header.
     """
     try:
         user = api_key_manager.get_user_from_api_key(api_key)
@@ -248,7 +253,7 @@ async def get_my_api_keys(api_key: str = Security(get_api_key)):
 async def generate_cover_letter(
     request: Request,
     user_data: CoverLetterRequest,
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(check_api_key)
 ):
     """
     Generate a personalized cover letter
@@ -276,7 +281,7 @@ async def generate_cover_letter(
 async def generate_project_description(
     request: Request,
     user_data: ProjectDescriptionRequest,
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(check_api_key)
 ):
     """
     Generate a professional project description for CV
@@ -304,7 +309,7 @@ async def generate_project_description(
 async def generate_summary(
     request: Request,
     user_data: SummaryRequest,
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(check_api_key)
 ):
     """
     Generate a professional summary for resume
@@ -332,7 +337,7 @@ async def generate_summary(
 async def create_resume(
     request: Request,
     user_data: CreateResumeRequest,
-    api_key: str = Security(get_api_key)
+    api_key: str = Security(check_api_key)
 ):
     """
     Generate a complete resume using LaTeX
