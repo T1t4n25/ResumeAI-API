@@ -16,6 +16,8 @@ from main import app
 # Create test client
 client = TestClient(app)
 
+api_key = "-oZ7Dhbq-GyYWA-ZSMP9BXNxQjRJpER0lsXqYSh98CE"
+
 # Create directory for generated summaries
 SUMMARIES_DIR = os.path.join(os.path.dirname(__file__), "generated_summaries")
 os.makedirs(SUMMARIES_DIR, exist_ok=True)
@@ -76,12 +78,6 @@ def save_summary(summary: str, metadata: dict) -> str:
         print(f"Error saving file: {str(e)}")
         return None
 
-@pytest.fixture
-def api_key():
-    """Get API key for testing"""
-    response = client.get("/api/resume-flow/generate-api-key")
-    assert response.status_code == 200, "Failed to generate API key"
-    return response.json()["api_key"]
 
 @pytest.fixture
 def test_payload():
@@ -93,7 +89,7 @@ def test_payload():
         "achievements": "Led team of 5, Reduced system latency by 40%"
     }
     
-def test_summary_generation(api_key, test_payload):
+def test_summary_generation(test_payload):
     """Test summary generation"""
     print("\nTesting Summary Generation")
     print("="*80)
@@ -269,7 +265,7 @@ def test_summary_generation(api_key, test_payload):
     print(f"Required Criteria Met: {len(required_validations) - len(failed_required)}/{len(required_validations)}")
     print(f"Best Practices Met: {len(best_practices_met)}/{len(best_practices)}")
     
-def test_missing_fields(api_key):
+def test_missing_fields():
     """Test missing required fields"""
     print("\nTesting Missing Fields")
     print("="*80)
@@ -283,7 +279,7 @@ def test_missing_fields(api_key):
     for payload, case in test_cases:
         print(f"\nTesting: {case}")
         response = client.post(
-            "/generate-summary",
+            "/api/resume-flow/generate-summary",
             json=payload,
             headers={"X-API-Key": api_key}
         )

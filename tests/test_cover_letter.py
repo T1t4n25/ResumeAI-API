@@ -19,6 +19,7 @@ client = TestClient(app)
 # Create directory for generated cover letters
 COVER_LETTERS_DIR = os.path.join(os.path.dirname(__file__), "generated_cover_letters")
 os.makedirs(COVER_LETTERS_DIR, exist_ok=True)
+api_key = "-oZ7Dhbq-GyYWA-ZSMP9BXNxQjRJpER0lsXqYSh98CE"
 
 @pytest.fixture
 def valid_payload():
@@ -184,10 +185,6 @@ def test_cover_letter_generation(valid_payload):
     print("\nTesting Cover Letter Generation")
     print("="*80)
     
-    # Get API key
-    api_key_response = client.get("/api/resume-flow/generate-api-key")
-    api_key = api_key_response.json()["api_key"]
-    
     # Generate cover letter
     start_time = time.time()
     response = client.post(
@@ -245,9 +242,7 @@ def test_invalid_api_key(valid_payload):
 
 def test_missing_fields(valid_payload):
     """Test missing required fields"""
-    api_key_response = client.get("/api/resume-flow/generate-api-key")
-    api_key = api_key_response.json()["api_key"]
-    
+
     required_fields = ["job_post", "user_name", "user_degree", 
                       "user_title", "user_experience", "user_skills"]
     

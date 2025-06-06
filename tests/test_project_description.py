@@ -17,6 +17,10 @@ from main import app
 # Create test client
 client = TestClient(app)
 
+api_key = "-oZ7Dhbq-GyYWA-ZSMP9BXNxQjRJpER0lsXqYSh98CE"
+
+API_VERSION = "3.0.0"
+
 # Create directory for generated project descriptions
 PROJECTS_DIR = os.path.join(os.path.dirname(__file__), "generated_projects")
 os.makedirs(PROJECTS_DIR, exist_ok=True)
@@ -28,12 +32,6 @@ ACTION_VERBS = [
     "established", "launched", "led", "managed", "orchestrated"
 ]
 
-@pytest.fixture
-def api_key():
-    """Get API key for testing"""
-    response = client.get("/api/resume-flow/generate-api-key")
-    assert response.status_code == 200, "Failed to generate API key"
-    return response.json()["api_key"]
 
 @pytest.fixture
 def valid_payload():
@@ -169,7 +167,7 @@ def save_test_report(description: str, payload: dict,
     
     return filename
 
-def test_project_description_generation(api_key, valid_payload):
+def test_project_description_generation(valid_payload):
     """Test project description generation"""
     print("\nTesting Project Description Generation")
     print("="*80)
@@ -202,7 +200,7 @@ def test_project_description_generation(api_key, valid_payload):
         metadata={
             "Generated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "Response Time": f"{generation_time:.2f} seconds",
-            "API Version": "3.0.0",
+            "API Version": API_VERSION,
             "Model": "Gemini Pro"        }
     )
     
@@ -229,7 +227,7 @@ def test_invalid_api_key(valid_payload):
     )
     assert response.status_code == 403, "Expected forbidden access with invalid API key"
 
-def test_missing_fields(api_key):
+def test_missing_fields():
     """Test missing required fields"""
     test_cases = [
         ({"project_name": "Test Project"}, "Missing skills"),
@@ -248,7 +246,7 @@ def test_missing_fields(api_key):
         assert response.status_code == 422, \
             f"Expected 422 for {case}, got {response.status_code}"
 
-def test_response_time(api_key, valid_payload):
+def test_response_time(valid_payload):
     """Test response time"""
     print("\nTesting Response Time")
     print("="*80)
