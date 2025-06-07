@@ -119,6 +119,7 @@ app = FastAPI(
     1. Register a new user account
     2. Use the returned API key for authenticated requests
     3. Include the API key in the `X-API-Key` header for all protected endpoints
+    4. Beware of the rate limits [3/minute for Authentication endpoints, 5/minute for Content Generation endpoints, 6/minute for Public endpoints]
     """,
     version="4.0.0",
     lifespan=lifespan,
