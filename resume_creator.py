@@ -1,5 +1,5 @@
 from TexSoup import TexSoup
-from TexSoup.data import TexCmd, BraceGroup, Token
+from TexSoup.data import TexCmd, BraceGroup
 import logging
 import os
 
