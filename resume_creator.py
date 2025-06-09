@@ -2,12 +2,14 @@ from TexSoup import TexSoup
 from TexSoup.data import TexCmd, BraceGroup
 import logging
 import os
+import subprocess
+from pathlib import Path
+from time import strftime
 
 class ResumeTexGenerator:
     
-    def __init__(self, request, user_id: str):
+    def __init__(self, request):
         logger = logging.getLogger("uvicorn")
-        self.user_id = user_id
         self.payload = request
         logger.info("payload inside:",self.payload)
         self.name= self.payload["information"]['name']
@@ -15,6 +17,16 @@ class ResumeTexGenerator:
         self.email=self.payload["information"]["email"]
         self.linkedin=self.payload["information"]["linkedin"]
         self.github=self.payload["information"]["github"]
+        self.user_id = self.payload["information"]["name"].replace(" ", '') + "-" + strftime("%Y%m%d-%H%M%S")
+        
+        self.tex_template = Path('latex_templates') / '1.tex'
+        self.output_dir = Path('generated_resumes')
+        self.filled_tex_file = Path(self.output_dir) / f"{self.user_id}.tex"
+        self.compiled_pdf_file = Path(self.output_dir) / f"{self.user_id}.pdf"
+        
+        self.tex_filled = False # Flag to check if the tex file is filled
+        with open(self.tex_template) as f:
+            self.soup = TexSoup(f, tolerance=1)
         
     def fill_info(self, soup:TexSoup):
         """
@@ -124,10 +136,11 @@ class ResumeTexGenerator:
 
     def generate_tex(self):
         """
-        Generates the LaTeX code for the resume using the provided data.
-        The generated LaTeX code is saved to a file and returned as a string.
+        This method fills in all sections of the resume template based on the provided payload.
+        The generated LaTeX code is saved to soup and can be compiled to PDF later.
+        
         """
-        with open('latex_templates/1.tex') as f:
+        with open(self.tex_template) as f:
             soup = TexSoup(f, tolerance=1)
             
             # Fill all data
@@ -148,11 +161,109 @@ class ResumeTexGenerator:
             
             if self.payload.get("soft_skills"):
                 self.fill_soft_skills(soup)
+                
+            self.tex_filled = True
+            return str(self.soup)
             
-            # Save changes
-            os.makedirs('generated_resumes', exist_ok=True)
-            with open(f'generated_resumes/{self.user_id}.tex', 'w') as f:
-                cleaned_output = str(soup).replace('section{}', 'section')
-                f.write(cleaned_output)
-                return cleaned_output
+    def generate_pdf(self):
+        # Save tex file for compilation
+        if not self.tex_filled:
+            self.generate_tex()
             
+            
+        os.makedirs(self.output_dir, exist_ok=True)
+        with open(self.filled_tex_file, 'w') as f:
+            cleaned_output = str(self.soup).replace('section{}', 'section')
+            f.write(cleaned_output)
+        
+        # Convert Path object to string for subprocess
+        working_dir = str(self.output_dir.absolute())
+        
+        subprocess.run([
+            'latexmk',
+            '-pdf',
+            '-f',
+            f'-jobname={self.user_id}',
+            f"{self.user_id}.tex"
+        ], cwd=working_dir, check=True, capture_output=True, timeout=5)
+        
+        #print(f"PDF generated at: {self.compiled_pdf_file}")
+        return self.compiled_pdf_file
+    
+    def cleanup(self):
+        """
+        Cleans up generated files after compilation.
+        """
+        # Cleaning up auxiliary files
+        subprocess.run(['latexmk', '-C'], cwd=self.output_dir, check=True)
+        os.remove(self.filled_tex_file)
+        
+def main():
+    # Example usage
+    request = {
+    "information": {
+        "address": "123 Example Street",
+        "email": "example@gmail.com",
+        "github": "github.com/example",
+        "linkedin": "linkedin.com/in/example",
+        "name": "John Doe",
+        "phone": "01123456789",
+        "summary": "Software engineer with 5 years experience"
+    },
+    "education": [
+        {
+        "degree": "BSc Computer Science",
+        "end_date": "2020",
+        "gpa": "3.5",
+        "location": "Tanta, Egypt",
+        "school": "Example University",
+        "start_date": "2016"
+        }
+    ],
+    "projects": [
+        {
+        "description": "Project description",
+        "end_date": "2022",
+        "name": "Project Name",
+        "skills": "Python, FastAPI, Google Gemini AI, PyTest, Pydantic"
+        }
+    ],
+    "experience": [
+        {
+        "company": "Example Company",
+        "description": "Job description",
+        "end_date": "Present",
+        "start_date": "2020",
+        "title": "Software Engineer"
+        }
+    ],
+    "technical_skills": {
+        "Other Skills": [
+        "AWS",
+        "Azure"
+        ],
+        "Programming Languages": [
+        "Python",
+        "Java"
+        ],
+        "Tools": [
+        "Git",
+        "Docker"
+        ]
+    },
+    "soft_skills": [
+        "Communication",
+        "Problem Solving"
+    ],
+    "output_format": "pdf"
+    }
+    
+    generator = ResumeTexGenerator(request)
+    print("Generated LaTeX content!")
+    print()
+    pdf_file = generator.generate_pdf()
+    print(f"PDF generated at: {pdf_file}")
+    
+    
+if __name__ == "__main__":
+    main()
