@@ -32,6 +32,9 @@ output_dir.mkdir(exist_ok=True)
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
+# Initialize  version
+VERSION = os.getenv("API_VER")
+
 # Configure logging
 LOG_FILENAME = datetime.datetime.now().strftime('logs/logfile_%Y_%m_%d.log')
 logging.basicConfig(level=logging.INFO, filename=LOG_FILENAME)
@@ -120,7 +123,7 @@ app = FastAPI(
     3. Include the API key in the `X-API-Key` header for all protected endpoints
     4. Beware of the rate limits [3/minute for Authentication endpoints, 5/minute for Content Generation endpoints, 6/minute for Public endpoints]
     """,
-    version="4.0.0",
+    version=VERSION,
     lifespan=lifespan,
     root_path="/api/resume-flow"
 )
@@ -409,7 +412,15 @@ async def create_resume(
             status_code=500,
             detail=f"Error generating resume\nPlease report this issue to the developers."
         )
+# AI Interview
 
+@app.get("/interview", tags=["AI Interview"])
+@limiter.limit("1/minute")
+def get_interview_token(request: Request):
+    """
+    Get an ephemeral token, prompt and settings for AI interview 
+    """
+    pass
 # Public endpoints
 @app.get("/health", tags=["Health"])
 @limiter.limit("6/minute")
@@ -427,7 +438,7 @@ def root(request: Request):
     """
     return {
         "message": "Resume Flow API",
-        "version": "4.0.0",
+        "version": VERSION,
         "endpoints": {
             "auth": ["/auth/register", "/auth/generate-api-key", "/auth/my-api-keys"],
             "protected": ["/generate-cover-letter", "/generate-project-description", "/generate-summary", "/create-resume"],
