@@ -1,0 +1,117 @@
+from dotenv import load_dotenv
+
+from livekit import agents
+from livekit.agents import AgentSession, Agent, RoomInputOptions
+from livekit.plugins import (
+    google,
+    noise_cancellation,
+)
+import json
+from datetime import datetime
+import asyncio
+load_dotenv()
+
+
+class InterviewerHardSkills(Agent):
+    def __init__(self, resume, job_description) -> None:
+        super().__init__(instructions=f"""
+
+You are an interview agent (Ahmed) conducting a fair and structured technical interview. Follow these principles:
+interview structure:
+Intro : Setup Welcome, explain flow, ensure comfort
+Warm-up : Question Open-ended, non-controversial (e.g., “Tell me about a project you enjoyed”) 
+Main Task : A real-world, multi-phase coding/design problem
+Follow-up : Explore edge cases, trade-offs, or reflections
+Wrap-up : Thank the candidate, explain next steps
+
+talk to the user in the dialect and language he talks to you in
+General Conduct
+Be supportive and non-adversarial
+Avoid judging unrelated traits (e.g. personality, background)
+Clearly inform the candidate of what to expect, days in advance
+
+Interview Structure
+Use the same core questions across all candidates
+Start with open-ended, easy-to-answer questions
+Focus on evidence-based answers
+If asking for critique (self or company), signal that it's okay
+
+Coding Task Design
+Avoid asking for well-known algorithms
+Use real-world problems, ideally with multiple phases
+Allow the use of their laptop and preferred tools
+Test a limited set of skills, not everything at once
+
+Closing
+Thank the candidate
+Do not begin evaluating during or after the call — evaluation is handled separately
+
+interviewee resume: {resume}
+job description: {job_description}
+""")
+
+
+class AgentManager():
+    def __init__(self, logger) -> None:
+        self.logger = logger
+        
+    # entrypoint function is the main entry point for the agent
+    # it is called when the agent is started
+    # it initializes the agent session and starts the interview process
+    async def entrypoint(context: agents.JobContext):
+        session = AgentSession(
+            llm=google.beta.realtime.RealtimeModel(
+                voice="Puck",
+                temperature=0.8,
+                max_output_tokens="2000",
+                modalities=["AUDIO"],
+            )
+        )
+        # This function will be called when the agent is stopped
+        # It writes the transcript of the interview to a file
+        async def write_transcript():
+            current_date = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"transcript_{context.room.name}_{current_date}.json"
+            with open(filename, 'w') as f:
+                trans = session.history.to_dict()
+                trans["chat"] = trans.pop("items")
+                for item in trans["chat"]:  
+                    # Remove unwanted fields
+                    item.pop("id", None)
+                    item.pop("type", None)
+                json.dump(trans, f, indent=2)
+                
+            print(f"Transcript for {context.room.name} saved to {filename}")
+
+        context.add_shutdown_callback(write_transcript)
+        
+        # Start the agent session with the room and input options
+        await session.start(
+            room=context.room,
+            agent=InterviewerHardSkills(),
+            room_input_options=RoomInputOptions(
+                # LiveKit Cloud enhanced noise cancellation
+                noise_cancellation=noise_cancellation.BVC(),
+            ),
+        )
+
+        await context.connect()
+
+        await session.generate_reply(
+            instructions="Greet the user and start interview."
+        )
+    async def start_agent(self, room_name):
+        """
+        Starts the agent for the given room name.
+        This function initializes the agent and starts it in the background.
+        """
+        self.logger.info(f"Starting agent for room: {room_name}")
+        # Create worker options for the agent
+        worker_options = agents.WorkerOptions(
+            entrypoint_fnc=self.entrypoint,
+            agent_name=f"interviewer-{room_name}"
+        )
+        
+        # Start the agent worker (this runs in background)
+        # Note: In production, might use celery or similar for better task management
+        asyncio.create_task(agents.Worker(worker_options).start())
