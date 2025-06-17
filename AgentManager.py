@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 
 from livekit import agents
+from livekit.rtc import Room
 from livekit.agents import AgentSession, Agent, RoomInputOptions
 from livekit.plugins import (
     google,
@@ -9,6 +10,7 @@ from livekit.plugins import (
 import json
 from datetime import datetime
 import asyncio
+import os
 load_dotenv()
 
 
@@ -54,10 +56,10 @@ job description: {job_description}
 class AgentManager():
     def __init__(self, logger) -> None:
         self.logger = logger
+        self.url = os.getenv("LIVEKIT_URL")
+        self.active_agents = {}  # Store active agent workers by room name
         
-    # entrypoint function is the main entry point for the agent
     # it is called when the agent is started
-    # it initializes the agent session and starts the interview process
     async def entrypoint(context: agents.JobContext):
         session = AgentSession(
             llm=google.beta.realtime.RealtimeModel(
@@ -100,18 +102,57 @@ class AgentManager():
         await session.generate_reply(
             instructions="Greet the user and start interview."
         )
-    async def start_agent(self, room_name):
+    async def start_agent_in_room(self, room_name: str, resume: str, job_description: str):
         """
-        Starts the agent for the given room name.
-        This function initializes the agent and starts it in the background.
+        Directly connect an agent to a specific room
+        This is the most straightforward approach for your use case
         """
-        self.logger.info(f"Starting agent for room: {room_name}")
-        # Create worker options for the agent
-        worker_options = agents.WorkerOptions(
-            entrypoint_fnc=self.entrypoint,
-            agent_name=f"interviewer-{room_name}"
-        )
-        
-        # Start the agent worker (this runs in background)
-        # Note: In production, might use celery or similar for better task management
-        asyncio.create_task(agents.Worker(worker_options).start())
+        try:
+            self.logger.info(f"Starting agent for room: {room_name}")
+            
+            # Create room connection for the agent
+            room = Room()
+            
+            # Generate token for the agent to join the room
+            agent_token = await self.generate_token(room_name, f"agent-{room_name}")
+            
+            # Connect agent to the room
+            await room.connect(self.url, agent_token)
+            
+            # Create and start the agent session
+            session = AgentSession(
+                llm=google.beta.realtime.RealtimeModel(
+                    voice="puck",
+                    temperature=0.7,
+                    max_output_tokens="1000",
+                    modalities=["AUDIO"],
+                    #turn_detection=google.beta.realtime.TurnDetection.server_vad(),
+                )
+            )
+            
+            # Start the session in the connected room
+            await session.start(
+                room=room,
+                agent=InterviewerHardSkills(resume=resume, job_description=job_description),
+                room_input_options=RoomInputOptions(
+                    noise_cancellation=noise_cancellation.BVC(),
+                    auto_subscribe=True,
+                ),
+            )
+            
+            await session.generate_reply(
+                instructions="Greet the user start the interview"
+            )
+            
+            self.active_agents[room_name] = {
+                'session': session,
+                'room': room,
+                'task': None
+            }
+            
+            self.logger.info(f"Agent successfully started in room: {room_name}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to start agent in room {room_name}: {e}")
+            raise
