@@ -1,6 +1,6 @@
 import os
 import logging
-from fastapi import FastAPI, Depends, HTTPException, Security, Request
+from fastapi import FastAPI, Depends, HTTPException, Security, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -23,6 +23,8 @@ from generation_endpoints.project_description_generator import ProjectDescriptio
 from generation_endpoints.summary_generator import SummaryGenerator
 from resume_creator import ResumeTexGenerator
 from Auth_DataBase.auth_database import AuthDatabase
+from LiveKitManager import LiveKitManager
+from AgentManager import AgentManager, InterviewerHardSkills
 
 # Load environment variables
 load_dotenv()
@@ -83,6 +85,11 @@ auth_db = AuthDatabase()
 cover_letter_generator = CoverLetterGenerator()
 project_description_generator = ProjectDescriptionGenerator()
 summary_generator = SummaryGenerator()
+
+#  Managers for AI interview
+livekit_manager = LiveKitManager(logger=logger)
+agent_manager = AgentManager(logger=logger)
+
 
 # Define API Key security scheme
 api_key_header = APIKeyHeader(
@@ -416,13 +423,44 @@ async def create_resume(
         )
 # AI Interview
 
-@app.get("/interview", tags=["AI Interview"])
-@limiter.limit("1/minute")
-def get_interview_token(request: Request):
+@app.post("/interview/start-room", tags=["AI Interview"])
+#@limiter.limit("3/hour")
+def create_room(request: Request, 
+                resume: str, 
+                job_description: str, 
+                api_key: str = Security(check_api_key)):
     """
-    Get an ephemeral token, prompt and settings for AI interview 
+    This endpoint creates a room for the AI interview and returns the room name and token.
     """
-    pass
+    user = api_key_manager.get_user_from_api_key(api_key)
+    room_name = f"interview_{user["id"]}_{user["name"]}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    room_name = livekit_manager.create_room(room_name)
+    user_token = livekit_manager.generate_token(room_name, user["name"])
+    
+    return {
+        "room_name": room_name,
+        "token": user_token,
+        "websocket_url": os.getenv("LIVEKIT_WEBSOCKET_URL"),
+        "message": "Room created successfully. Use the token to join the room."
+    }
+    
+@app.post("/interview/start-interviewer", tags=["AI Interview"])
+#@limiter.limit("3/hour")
+def start_agent(request: Request, 
+                room_name: str,
+                resume: str, 
+                job_description: str, 
+                api_key: str = Security(check_api_key)):
+    """
+    This endpoint starts an AI interviewer for the given room.
+    """
+    session = agent_manager.start_agent_in_room(room_name, resume, job_description)
+    
+    return {
+        "message": f"AI interviewer started in room {room_name}.",
+        "room_name": room_name,
+    }
+    
 # Public endpoints
 @app.get("/health", tags=["Health"])
 @limiter.limit("6/minute")
