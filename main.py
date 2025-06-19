@@ -423,9 +423,7 @@ async def create_resume(
 
 @app.post("/interview/start-room", tags=["AI Interview"])
 #@limiter.limit("3/hour")
-def create_room(request: Request, 
-                resume: str, 
-                job_description: str, 
+def create_room(request: Request,
                 api_key: str = Security(check_api_key)):
     """
     This endpoint creates a room for the AI interview and returns the room name and token.
