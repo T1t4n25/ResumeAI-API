@@ -17,7 +17,8 @@ class CoverLetterGenerator:
         """
         prompt = f"""
 **Task:**  
-Craft a professional cover letter using the provided job posting and candidate data. Focus solely on the essential content, eliminating any placeholder or template-style headers like addresses or contact information.
+Craft a professional cover letter using the provided job posting and candidate data. 
+Focus solely on the essential content, eliminating any placeholder or template-style headers like addresses or contact information.
 
 **Job Posting Context:**  
 {request.job_post}
