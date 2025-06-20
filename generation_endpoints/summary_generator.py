@@ -38,7 +38,9 @@ Create a concise and impactful resume summary for a CV that showcases profession
 - Use strong, direct language throughout
 
 **Example:**  
-Spearheaded complex software solutions as a Senior Software Engineer with 5+ years of expertise in cloud architecture. Successfully led a team of 5 developers, delivering a system optimization that reduced latency by 40%. Demonstrated mastery of Python and AWS, consistently driving innovation in microservices architecture and scalable solutions.
+Spearheaded complex software solutions as a Senior Software Engineer with 5+ years of expertise in cloud architecture. 
+Successfully led a team of 5 developers, delivering a system optimization that reduced latency by 40%. 
+Demonstrated mastery of Python and AWS, consistently driving innovation in microservices architecture and scalable solutions.
 
 **Now, write the summary following the above instructions.**
         """
