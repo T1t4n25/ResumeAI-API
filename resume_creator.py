@@ -59,6 +59,11 @@ class ResumeTexGenerator:
         # for n in personal_info:
         #     info.args.append(n)
         info.args.extend(personal_info)
+        
+    def fill_education(self, soup: TexSoup):
+        """
+        Fills the education section of the resume template.
+        """
         # Create Education Section
         edu = soup.find_all('eduPlaceholder')[1]
         edu.args.clear()
@@ -149,6 +154,9 @@ class ResumeTexGenerator:
             
             if self.payload["information"].get("summary"):
                 self.fill_summary(self.soup)
+            
+            if self.payload["education"]:
+                self.fill_education(self.soup)
             
             if self.payload.get("experience"):
                 self.fill_experience(self.soup)
