@@ -141,26 +141,26 @@ class ResumeTexGenerator:
         
         """
         with open(self.tex_template) as f:
-            soup = TexSoup(f, tolerance=1)
+            self.soup = TexSoup(f, tolerance=1)
             
             # Fill all data
             if len(self.payload["information"]) >= 6:
-                self.fill_info(soup)
+                self.fill_info(self.soup)
             
             if self.payload["information"].get("summary"):
-                self.fill_summary(soup)
+                self.fill_summary(self.soup)
             
             if self.payload.get("experience"):
-                self.fill_experience(soup)
+                self.fill_experience(self.soup)
             
             if self.payload.get("projects"):
-                self.fill_projects(soup)
+                self.fill_projects(self.soup)
             
             if self.payload.get("technical_skills"):
-                self.fill_tech_skills(soup)
+                self.fill_tech_skills(self.soup)
             
             if self.payload.get("soft_skills"):
-                self.fill_soft_skills(soup)
+                self.fill_soft_skills(self.soup)
                 
             self.tex_filled = True
             return str(self.soup)
