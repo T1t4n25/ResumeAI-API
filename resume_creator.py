@@ -66,6 +66,9 @@ class ResumeTexGenerator:
         """
         # Create Education Section
         edu = soup.find_all('eduPlaceholder')[1]
+        section = soup.find_all('sectionPlaceholder')[1]
+        section.args.clear()
+        section.args.append(TexCmd('section', [BraceGroup('Education')]))
         edu.args.clear()
         for edu_item in self.payload["education"]:
             new_edu = TexCmd('resumeEduSubheading', [
@@ -80,11 +83,18 @@ class ResumeTexGenerator:
         """
         Fills the summary section of the resume template.
         """
+        section = soup.find_all('sectionPlaceholder')[2]
+        section.args.clear()
+        section.args.append(TexCmd('section', [BraceGroup('Summary')]))
+        
         summary = soup.find_all('summaryPlaceholder')[1]
         sum_body = self.payload["information"]["summary"]
         summary.args[0].string = sum_body
 
     def fill_experience(self, soup: TexSoup):
+        section = soup.find_all('sectionPlaceholder')[3]
+        section.args.clear()
+        section.args.append(TexCmd('section', [BraceGroup('Experience')]))
         experience = soup.find_all('expPlaceholder')[1]
         experience.args.clear()
         for exp_item in self.payload["experience"]:
@@ -105,6 +115,9 @@ class ResumeTexGenerator:
         """
         Fills the projects section of the resume template.
         """
+        section = soup.find_all('sectionPlaceholder')[4]
+        section.args.clear()
+        section.args.append(TexCmd('section', [BraceGroup('Projects')]))
         projects = soup.find_all('projectsPlaceholder')[1]
         projects.args.clear()
         for proj_item in self.payload["projects"]:
@@ -123,6 +136,10 @@ class ResumeTexGenerator:
         """
         Fills the technical skills section of the resume template.
         """
+        section = soup.find_all('sectionPlaceholder')[5]
+        section.args.clear()
+        section.args.append(TexCmd('section', [BraceGroup('Technical Skills')]))
+        
         tech_skills = soup.find_all('techSkillsPlaceholder')[1]
         tech_skills.args.clear()
         skills_content = []
@@ -134,6 +151,9 @@ class ResumeTexGenerator:
         tech_skills.args.extend(skills_content)
 
     def fill_soft_skills(self, soup: TexSoup):
+        section = soup.find_all('sectionPlaceholder')[6]
+        section.args.clear()
+        section.args.append(TexCmd('section', [BraceGroup('Soft Skills')]))
         soft_skills = soup.find_all('softSkillsPlaceholder')[1]
         soft_skills.args.clear()
         soft_skills_content = TexCmd('emph', '{'+', '.join(self.payload['soft_skills']) + '}')
@@ -269,8 +289,9 @@ def main():
     generator = ResumeTexGenerator(request)
     print("Generated LaTeX content!")
     print()
-    pdf_file = generator.generate_pdf()
-    print(f"PDF generated at: {pdf_file}")
+    print(generator.soup.find_all('sectionPlaceholder'))
+    #pdf_file = generator.generate_pdf()
+    #print(f"PDF generated at: {pdf_file}")
     
     
 if __name__ == "__main__":
