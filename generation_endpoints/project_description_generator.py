@@ -4,7 +4,7 @@ from models import ProjectDescriptionRequest
 from utility_func import *
 
 class ProjectDescriptionGenerator:
-    def __init__(self, model_name="gemini-2.0-flash-lite"):
+    def __init__(self, model_name="gemini-2.5-flash-lite-preview-06-17"):
         self.model = genai.GenerativeModel(model_name)
 
     def generate_description(self, request: ProjectDescriptionRequest) -> str:

@@ -9,7 +9,7 @@ class CoverLetterGenerator:
     def __init__(self):
         # Configure Gemini API
         genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
-        self.model = genai.GenerativeModel("gemini-2.0-flash-lite")
+        self.model = genai.GenerativeModel("gemini-2.5-flash-lite-preview-06-17")
 
     def generate_cover_letter(self, request):
         """
