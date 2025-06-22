@@ -7,10 +7,59 @@ from pathlib import Path
 from time import strftime
 
 class ResumeTexGenerator:
-    
+        
+    def escape_latex(self, text):
+        """
+        Escape special LaTeX characters in a string.
+        """
+        if not isinstance(text, str):
+            text = str(text)
+        
+        # Dictionary of LaTeX special characters and their escaped versions
+        latex_special_chars = {
+            '\\': r'\textbackslash{}',
+            '{': r'\{',
+            '}': r'\}',
+            '$': r'\$',
+            '&': r'\&',
+            '%': r'\%',
+            '#': r'\#',
+            '^': r'\textasciicircum{}',
+            '_': r'\_',
+            '~': r'\textasciitilde{}',
+            '<': r'\textless{}',
+            '>': r'\textgreater{}',
+            '|': r'\textbar{}',
+        }
+        
+        # Escape each special character
+        for char, escaped in latex_special_chars.items():
+            text = text.replace(char, escaped)
+        
+        return text
+
+    def escape_dict_values(self, data):
+        """
+        Recursively escape LaTeX special characters in dictionary values.
+        Handles nested dictionaries and lists.
+        """
+        for key, value in data.items():
+            if isinstance(value, str):
+                data[key] = self.escape_latex(value)
+            elif isinstance(value, dict):
+                self.escape_dict_values(value)
+            elif isinstance(value, list):
+                for i, listItem in enumerate(value):
+                    if isinstance(value[i], str):
+                        data[key][i] = self.escape_latex(listItem)
+                    elif isinstance(listItem, dict):
+                        self.escape_dict_values(listItem)
+
     def __init__(self, request):
         logger = logging.getLogger("uvicorn")
         self.payload = request
+        # excape characters
+        self.escape_dict_values(self.payload)
         logger.info("payload inside:",self.payload)
         self.name= self.payload["information"]['name']
         self.phone=self.payload["information"]["phone"]
@@ -165,6 +214,7 @@ class ResumeTexGenerator:
         The generated LaTeX code is saved to soup and can be compiled to PDF later.
         
         """
+        
         with open(self.tex_template) as f:
             self.soup = TexSoup(f, tolerance=1)
             
@@ -225,73 +275,78 @@ class ResumeTexGenerator:
         # Cleaning up auxiliary files
         subprocess.run(['latexmk', '-C'], cwd=self.output_dir, check=True)
         os.remove(self.filled_tex_file)
+    
+
         
 def main():
     # Example usage
     request = {
-    "information": {
-        "address": "123 Example Street",
-        "email": "example@gmail.com",
-        "github": "github.com/example",
-        "linkedin": "linkedin.com/in/example",
-        "name": "John Doe",
-        "phone": "01123456789",
-        "summary": "Software engineer with 5 years experience"
-    },
-    "education": [
-        {
-        "degree": "BSc Computer Science",
-        "end_date": "2020",
-        "gpa": "3.5",
-        "location": "Tanta, Egypt",
-        "school": "Example University",
-        "start_date": "2016"
-        }
-    ],
-    "projects": [
-        {
-        "description": "Project description",
-        "end_date": "2022",
-        "name": "Project Name",
-        "skills": "Python, FastAPI, Google Gemini AI, PyTest, Pydantic"
-        }
-    ],
-    "experience": [
-        {
-        "company": "Example Company",
-        "description": "Job description",
-        "end_date": "Present",
-        "start_date": "2020",
-        "title": "Software Engineer"
-        }
-    ],
-    "technical_skills": {
-        "Other Skills": [
-        "AWS",
-        "Azure"
-        ],
-        "Programming Languages": [
-        "Python",
-        "Java"
-        ],
-        "Tools": [
-        "Git",
-        "Docker"
-        ]
-    },
-    "soft_skills": [
-        "Communication",
-        "Problem Solving"
-    ],
-    "output_format": "pdf"
+  "information": {
+    "address": "123 Example Street",
+    "email": "example@gmail.com",
+    "github": "github.com/example",
+    "linkedin": "linkedin.com/in/example",
+    "name": "John Doe",
+    "phone": "01123456789",
+    "summary": "Software engineer with 5 years experience"
+  },
+  "education": [
+    {
+      "degree": "BSc Computer Science",
+      "end_date": "2020",
+      "gpa": "3.5",
+      "location": "Tanta, Egypt",
+      "school": "Example University",
+      "start_date": "2016"
     }
+  ],
+  "projects": [
+    {
+      "description": "Project description%",
+      "end_date": "2022",
+      "name": "Project Name",
+      "skills": "Python, FastAPI, Google Gemini AI, PyTest, Pydantic"
+    }
+  ],
+  "experience": [
+    {
+      "company": "Example Company",
+      "description": "Job description",
+      "end_date": "Present",
+      "start_date": "2020",
+      "title": "Software Engineer"
+    }
+  ],
+  "technical_skills": {
+    "Other Skills": [
+      "AWS",
+      "Azure"
+    ],
+    "Programming Languages": [
+      "Python",
+      "Java"
+    ],
+    "Tools": [
+      "Git",
+      "Docker"
+    ]
+  },
+  "soft_skills": [
+    "Communication",
+    "Problem Solving"
+  ],
+  "output_format": "pdf"
+}
     
     generator = ResumeTexGenerator(request)
     print("Generated LaTeX content!")
     print()
-    print(generator.soup.find_all('sectionPlaceholder'))
-    #pdf_file = generator.generate_pdf()
-    #print(f"PDF generated at: {pdf_file}")
+    escape_dict_values(request)
+    print("Escaped request payload:")
+    print(request)
+    generator.generate_pdf()
+    print("PDF generated successfully!")
+    generator.cleanup()
     
     
 if __name__ == "__main__":
