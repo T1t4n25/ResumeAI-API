@@ -341,7 +341,7 @@ def main():
     generator = ResumeTexGenerator(request)
     print("Generated LaTeX content!")
     print()
-    escape_dict_values(request)
+    generator.escape_dict_values(request)
     print("Escaped request payload:")
     print(request)
     generator.generate_pdf()
