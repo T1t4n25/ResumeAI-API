@@ -20,16 +20,6 @@ class CoverLetterGenerator:
 Craft a professional cover letter using the provided job posting and candidate data. 
 Focus solely on the essential content, eliminating any placeholder or template-style headers like addresses or contact information.
 
-**Job Posting Context:**  
-{request.job_post}
-
-**Candidate Professional Profile:**  
-- Name: {request.user_name}  
-- Professional Title: {request.user_title}  
-- Degree: {request.user_degree}  
-- Professional Experience: {request.user_experience}  
-- Key Skills: {request.user_skills}
-
 **Writing Guidelines:**  
 1. Begin directly with "Dear Hiring Manager,"
 
@@ -67,6 +57,16 @@ Focus solely on the essential content, eliminating any placeholder or template-s
 - Practical experience  
 - Measurable impacts (always in numeral form)  
 - Alignment with job requirements
+
+**Job Posting Context:**  
+{request.job_post}
+
+**Candidate Professional Profile:**  
+- Name: {request.user_name}  
+- Professional Title: {request.user_title}  
+- Degree: {request.user_degree}  
+- Professional Experience: {request.user_experience}  
+- Key Skills: {request.user_skills}
 
 **Now, write the cover letter following the above instructions.**"""
 

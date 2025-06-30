@@ -25,8 +25,6 @@ class ProjectDescriptionGenerator:
         **Task:**
         Create a professional and impactful project description for a CV/resume based on the following information.
 
-        **Project Details:**
-        {context}
 
         **Instructions:**
         - Begin with a strong action verb.
@@ -49,6 +47,8 @@ class ProjectDescriptionGenerator:
         Developed a full-stack e-commerce platform using React and Firebase, integrated secure payment processing with Stripe, 
         **increasing user transaction rates by 25%** and **improving page load times by 40%**.
 
+        **Project Details:**
+        {context}
         **Now, write the sentence following the above instructions.**
         """
         try:

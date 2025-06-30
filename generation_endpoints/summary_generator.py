@@ -15,12 +15,6 @@ class SummaryGenerator:
 **Task:**  
 Create a concise and impactful resume summary for a CV that showcases professional expertise and achievements.
 
-**Candidate Information:**  
-- Name and Title: {request.current_title}  
-- Experience: {request.years_experience}  
-- Key Skills: {request.skills}  
-- Achievements: {request.achievements if request.achievements else "Not specified"}
-
 **Instructions:**  
 - Begin with a strong action verb followed by professional identity  
 - Emphasize years of experience  
@@ -41,6 +35,12 @@ Create a concise and impactful resume summary for a CV that showcases profession
 Spearheaded complex software solutions as a Senior Software Engineer with 5+ years of expertise in cloud architecture. 
 Successfully led a team of 5 developers, delivering a system optimization that reduced latency by 40%. 
 Demonstrated mastery of Python and AWS, consistently driving innovation in microservices architecture and scalable solutions.
+
+**Candidate Information:**  
+- Name and Title: {request.current_title}  
+- Experience: {request.years_experience}  
+- Key Skills: {request.skills}  
+- Achievements: {request.achievements if request.achievements else "Not specified"}
 
 **Now, write the summary following the above instructions.**
         """
