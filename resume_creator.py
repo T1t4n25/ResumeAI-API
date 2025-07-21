@@ -60,7 +60,7 @@ class ResumeTexGenerator:
         self.payload = request
         # excape characters
         self.escape_dict_values(self.payload)
-        logger.info("payload inside:",self.payload)
+        logger.info("payload inside:",self.payload.json())
         self.name= self.payload["information"]['name']
         self.phone=self.payload["information"]["phone"]
         self.email=self.payload["information"]["email"]
@@ -95,11 +95,11 @@ class ResumeTexGenerator:
                 ,
                 ' ~ ',
                 TexCmd('href', [BraceGroup(f'{self.linkedin}')]),
-                BraceGroup(r'\raisebox{-0.2\height}\faLinkedin\  \underline{'+self.linkedin+r'}')
+                BraceGroup(r'\raisebox{-0.2\height}\faLinkedin\  \underline{'+str(self.linkedin).removeprefix('https://').removeprefix('www.')+r'}')
                 ,
                 ' ~ ',
                 TexCmd('href', [BraceGroup(f'{{{self.github}}}')]),
-                BraceGroup(r'\raisebox{-0.2\height}\faGithub\  \underline{'+self.github+'}')
+                BraceGroup(r'\raisebox{-0.2\height}\faGithub\  \underline{'+str(self.github).removeprefix('https://').removeprefix('www.')+'}')
             ]),
             TexCmd('vspace', [BraceGroup('-8pt')])
         ]
@@ -239,20 +239,24 @@ class ResumeTexGenerator:
             
             if self.payload.get("soft_skills"):
                 self.fill_soft_skills(self.soup)
-                
+            
+            # Clean up to remove errors
+            cleaned_output = str(self.soup).replace(r'section{}', 'section')
+            cleaned_output = cleaned_output.replace(r'{\}', '{}')
+    
             self.tex_filled = True
-            return str(self.soup)
+            return cleaned_output
             
     def generate_pdf(self):
         # Save tex file for compilation
+        tes_str = ''
         if not self.tex_filled:
-            self.generate_tex()
+            tes_str = self.generate_tex()
             
             
         os.makedirs(self.output_dir, exist_ok=True)
         with open(self.filled_tex_file, 'w') as f:
-            cleaned_output = str(self.soup).replace('section{}', 'section')
-            f.write(cleaned_output)
+            f.write(tes_str)
         
         # Convert Path object to string for subprocess
         working_dir = str(self.output_dir.absolute())
