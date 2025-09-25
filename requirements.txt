@@ -12,3 +12,4 @@ texsoup
 sqlalchemy
 psycopg2-binary
 slowapi
+livekit
