@@ -54,13 +54,14 @@ job description: {job_description}
 
 
 class AgentManager():
-    def __init__(self, logger) -> None:
+    def __init__(self, logger, livekit_manager) -> None:
         self.logger = logger
         self.url = os.getenv("LIVEKIT_URL")
+        self.livekit_manager = livekit_manager
         self.active_agents = {}  # Store active agent workers by room name
         
     # it is called when the agent is started
-    async def entrypoint(context: agents.JobContext):
+    async def entrypoint(self, context: agents.JobContext):
         session = AgentSession(
             llm=google.beta.realtime.RealtimeModel(
                 voice="Puck",
@@ -71,7 +72,7 @@ class AgentManager():
         )
         # This function will be called when the agent is stopped
         # It writes the transcript of the interview to a file
-        async def write_transcript():
+        async def write_transcript(self):
             current_date = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"transcript_{context.room.name}_{current_date}.json"
             with open(filename, 'w') as f:
@@ -83,7 +84,7 @@ class AgentManager():
                     item.pop("type", None)
                 json.dump(trans, f, indent=2)
                 
-            print(f"Transcript for {context.room.name} saved to {filename}")
+            self.logger.info(f"Transcript for {context.room.name} saved to {filename}")
 
         context.add_shutdown_callback(write_transcript)
         
@@ -94,6 +95,7 @@ class AgentManager():
             room_input_options=RoomInputOptions(
                 # LiveKit Cloud enhanced noise cancellation
                 noise_cancellation=noise_cancellation.BVC(),
+                
             ),
         )
 
@@ -114,7 +116,7 @@ class AgentManager():
             room = Room()
             
             # Generate token for the agent to join the room
-            agent_token = await self.generate_token(room_name, f"agent-{room_name}")
+            agent_token = await self.livekit_manager.generate_token(room_name, f"agent-{room_name}")
             
             # Connect agent to the room
             await room.connect(self.url, agent_token)
@@ -126,19 +128,28 @@ class AgentManager():
                     temperature=0.7,
                     max_output_tokens="1000",
                     modalities=["AUDIO"],
+                    api_key=os.getenv("GEMINI_API_KEY")
                     #turn_detection=google.beta.realtime.TurnDetection.server_vad(),
                 )
             )
             
             # Start the session in the connected room
-            await session.start(
-                room=room,
-                agent=InterviewerHardSkills(resume=resume, job_description=job_description),
-                room_input_options=RoomInputOptions(
-                    noise_cancellation=noise_cancellation.BVC(),
-                    auto_subscribe=True,
-                ),
-            )
+            async def start_session():
+                try:    
+                    self.logger.info("starting now")
+                    await session.start(
+                        room=room,
+                        agent=InterviewerHardSkills(resume=resume, job_description=job_description),
+                        room_input_options=RoomInputOptions(
+                            noise_cancellation=noise_cancellation.BVC(),
+                            close_on_disconnect=True,
+                        ),
+                    )
+                except Exception as e:
+                    self.logger.error("Session could not start because: " + str(e))
+            task = asyncio.create_task(start_session())
+            
+            await asyncio.sleep(1)
             
             await session.generate_reply(
                 instructions="Greet the user start the interview"
@@ -147,7 +158,7 @@ class AgentManager():
             self.active_agents[room_name] = {
                 'session': session,
                 'room': room,
-                'task': None
+                'task': task
             }
             
             self.logger.info(f"Agent successfully started in room: {room_name}")

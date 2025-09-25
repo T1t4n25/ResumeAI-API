@@ -88,7 +88,7 @@ summary_generator = SummaryGenerator()
 
 #  Managers for AI interview
 livekit_manager = LiveKitManager(logger=logger)
-agent_manager = AgentManager(logger=logger)
+agent_manager = AgentManager(logger=logger, livekit_manager=livekit_manager)
 
 
 # Define API Key security scheme
@@ -423,26 +423,26 @@ async def create_resume(
 
 @app.post("/interview/start-room", tags=["AI Interview"])
 #@limiter.limit("3/hour")
-def create_room(request: Request,
+async def create_room(request: Request,
                 api_key: str = Security(check_api_key)):
     """
     This endpoint creates a room for the AI interview and returns the room name and token.
     """
     user = api_key_manager.get_user_from_api_key(api_key)
-    room_name = f"interview_{user["id"]}_{user["name"]}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    room_name = livekit_manager.create_room(room_name)
-    user_token = livekit_manager.generate_token(room_name, user["name"])
+    room_name = f"interview_{user["id"]}_{user["username"]}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    room_name = await livekit_manager.create_room(room_name)
+    user_token = await livekit_manager.generate_token(room_name, user["username"])
     
     return {
         "room_name": room_name,
         "token": user_token,
-        "websocket_url": os.getenv("LIVEKIT_WEBSOCKET_URL"),
+        "websocket_url": os.getenv("LIVEKIT_URL"),
         "message": "Room created successfully. Use the token to join the room."
     }
     
 @app.post("/interview/start-interviewer", tags=["AI Interview"])
 #@limiter.limit("3/hour")
-def start_agent(request: Request, 
+async def start_agent(request: Request, 
                 room_name: str,
                 resume: str, 
                 job_description: str, 
@@ -450,7 +450,7 @@ def start_agent(request: Request,
     """
     This endpoint starts an AI interviewer for the given room.
     """
-    session = agent_manager.start_agent_in_room(room_name, resume, job_description)
+    await agent_manager.start_agent_in_room(room_name, resume, job_description)
     
     return {
         "message": f"AI interviewer started in room {room_name}.",

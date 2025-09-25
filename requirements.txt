@@ -10,5 +10,5 @@ pytest
 httpx
 texsoup
 sqlalchemy
-psycopg2
+psycopg2-binary
 slowapi
