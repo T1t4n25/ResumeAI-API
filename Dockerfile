@@ -19,7 +19,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-RUN pip install livekit-plugins-noise-cancellation
 # Copy application code
 COPY . .
 
