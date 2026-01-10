@@ -1,0 +1,2 @@
+# Feature slices (vertical architecture)
+

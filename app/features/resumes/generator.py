@@ -1,3 +1,4 @@
+
 from TexSoup import TexSoup
 from TexSoup.data import TexCmd, BraceGroup
 import logging
@@ -56,11 +57,11 @@ class ResumeTexGenerator:
                         self.escape_dict_values(listItem)
 
     def __init__(self, request):
-        logger = logging.getLogger("uvicorn")
+        self.logger = logging.getLogger("resume_flow")
         self.payload = request
         # excape characters
         self.escape_dict_values(self.payload)
-        logger.info("payload inside:",self.payload.json())
+        self.logger.info(f"payload inside: {self.payload}") # Fixed log format
         self.name= self.payload["information"]['name']
         self.phone=self.payload["information"]["phone"]
         self.email=self.payload["information"]["email"]
@@ -68,6 +69,7 @@ class ResumeTexGenerator:
         self.github=self.payload["information"]["github"]
         self.user_id = self.payload["information"]["name"].replace(" ", '') + "-" + strftime("%Y%m%d-%H%M%S")
         
+        # Assuming code runs from project root
         self.tex_template = Path('latex_templates') / '1.tex'
         self.output_dir = Path('generated_resumes')
         self.filled_tex_file = Path(self.output_dir) / f"{self.user_id}.tex"
@@ -279,79 +281,4 @@ class ResumeTexGenerator:
         # Cleaning up auxiliary files
         subprocess.run(['latexmk', '-C'], cwd=self.output_dir, check=True)
         os.remove(self.filled_tex_file)
-    
 
-        
-def main():
-    # Example usage
-    request = {
-  "information": {
-    "address": "123 Example Street",
-    "email": "example@gmail.com",
-    "github": "github.com/example",
-    "linkedin": "linkedin.com/in/example",
-    "name": "John Doe",
-    "phone": "01123456789",
-    "summary": "Software engineer with 5 years experience"
-  },
-  "education": [
-    {
-      "degree": "BSc Computer Science",
-      "end_date": "2020",
-      "gpa": "3.5",
-      "location": "Tanta, Egypt",
-      "school": "Example University",
-      "start_date": "2016"
-    }
-  ],
-  "projects": [
-    {
-      "description": "Project description%",
-      "end_date": "2022",
-      "name": "Project Name",
-      "skills": "Python, FastAPI, Google Gemini AI, PyTest, Pydantic"
-    }
-  ],
-  "experience": [
-    {
-      "company": "Example Company",
-      "description": "Job description",
-      "end_date": "Present",
-      "start_date": "2020",
-      "title": "Software Engineer"
-    }
-  ],
-  "technical_skills": {
-    "Other Skills": [
-      "AWS",
-      "Azure"
-    ],
-    "Programming Languages": [
-      "Python",
-      "Java"
-    ],
-    "Tools": [
-      "Git",
-      "Docker"
-    ]
-  },
-  "soft_skills": [
-    "Communication",
-    "Problem Solving"
-  ],
-  "output_format": "pdf"
-}
-    
-    generator = ResumeTexGenerator(request)
-    print("Generated LaTeX content!")
-    print()
-    generator.escape_dict_values(request)
-    print("Escaped request payload:")
-    print(request)
-    generator.generate_pdf()
-    print("PDF generated successfully!")
-    generator.cleanup()
-    
-    
-if __name__ == "__main__":
-    main()

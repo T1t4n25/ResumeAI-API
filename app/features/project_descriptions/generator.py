@@ -1,11 +1,18 @@
-# project_description_generator.py
+
+import os
+import logging
 import google.generativeai as genai
-from models import ProjectDescriptionRequest
-from utility_func import *
+from app.features.project_descriptions.models import ProjectDescriptionRequest
+from app.shared.utils.text_utils import reduce_tokens
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class ProjectDescriptionGenerator:
     def __init__(self, model_name="gemini-2.5-flash-lite-preview-06-17"):
+        genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
         self.model = genai.GenerativeModel(model_name)
+        self.logger = logging.getLogger("resume_flow")
 
     def generate_description(self, request: ProjectDescriptionRequest) -> str:
         """
@@ -58,4 +65,5 @@ class ProjectDescriptionGenerator:
             response = self.model.generate_content(prompt)
             return response.text.strip()
         except Exception as e:
+            self.logger.error(f"Error generating project description: {str(e)}")
             raise ValueError(f"Error generating project description: {str(e)}")
