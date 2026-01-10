@@ -1,11 +1,18 @@
-# summary_generator.py
+
+import os
+import logging
 import google.generativeai as genai
-from models import SummaryRequest
-from utility_func import reduce_tokens
+from app.features.summaries.models import SummaryRequest
+from app.shared.utils.text_utils import reduce_tokens
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class SummaryGenerator:
     def __init__(self, model_name="gemini-2.5-flash-lite-preview-06-17"):
+        genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
         self.model = genai.GenerativeModel(model_name)
+        self.logger = logging.getLogger("resume_flow")
 
     def generate_summary(self, request: SummaryRequest) -> str:
         """
@@ -52,4 +59,5 @@ Demonstrated mastery of Python and AWS, consistently driving innovation in micro
             response = self.model.generate_content(prompt)
             return response.text.strip()
         except Exception as e:
+            self.logger.error(f"Error generating summary: {str(e)}")
             raise ValueError(f"Error generating summary: {str(e)}")

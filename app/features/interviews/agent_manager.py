@@ -1,5 +1,5 @@
-from dotenv import load_dotenv
 
+from dotenv import load_dotenv
 from livekit import agents
 from livekit.rtc import Room
 from livekit.agents import AgentSession, Agent, RoomInputOptions
@@ -11,6 +11,7 @@ import json
 from datetime import datetime
 import asyncio
 import os
+
 load_dotenv()
 
 
@@ -104,6 +105,7 @@ class AgentManager():
         await session.generate_reply(
             instructions="Greet the user and start interview."
         )
+
     async def start_agent_in_room(self, room_name: str, resume: str, job_description: str):
         """
         Directly connect an agent to a specific room

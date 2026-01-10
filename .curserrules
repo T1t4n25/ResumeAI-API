@@ -1,0 +1,457 @@
+# Cursor Rules for Resume Flow API
+
+## Project Overview
+This is a FastAPI-based backend service that leverages Google's Gemini AI to generate professional cover letters, project descriptions, resume summaries, and complete LaTeX-compiled resumes. The system includes user authentication, API key management, and AI-powered interview capabilities via LiveKit.
+
+## Architecture: Vertical Slicing
+
+### Core Principle
+Organize code by **feature/domain** rather than by technical layer. Each feature slice should be self-contained with its own models, services, routes, and dependencies.
+
+### Directory Structure (Target Architecture)
+```
+app/
+├── core/                    # Shared infrastructure
+│   ├── config.py           # Application configuration
+│   ├── database.py         # Database connection & session management
+│   ├── security.py         # Security utilities (Keycloak integration)
+│   └── dependencies.py     # Shared FastAPI dependencies
+│
+├── features/               # Feature slices (vertical architecture)
+│   ├── auth/              # Authentication feature
+│   │   ├── __init__.py
+│   │   ├── models.py      # Pydantic models for auth
+│   │   ├── routes.py      # Auth endpoints
+│   │   ├── service.py     # Auth business logic
+│   │   └── dependencies.py # Auth-specific dependencies
+│   │
+│   ├── cover_letters/     # Cover letter generation feature
+│   │   ├── __init__.py
+│   │   ├── models.py      # Request/response models
+│   │   ├── routes.py      # Cover letter endpoints
+│   │   ├── service.py     # Generation logic
+│   │   └── dependencies.py
+│   │
+│   ├── project_descriptions/  # Project description feature
+│   │   ├── __init__.py
+│   │   ├── models.py
+│   │   ├── routes.py
+│   │   ├── service.py
+│   │   └── dependencies.py
+│   │
+│   ├── summaries/         # Summary generation feature
+│   │   ├── __init__.py
+│   │   ├── models.py
+│   │   ├── routes.py
+│   │   ├── service.py
+│   │   └── dependencies.py
+│   │
+│   ├── resumes/           # Resume creation feature
+│   │   ├── __init__.py
+│   │   ├── models.py
+│   │   ├── routes.py
+│   │   ├── service.py     # LaTeX generation logic
+│   │   └── dependencies.py
+│   │
+│   └── interviews/        # AI interview feature
+│       ├── __init__.py
+│       ├── models.py
+│       ├── routes.py
+│       ├── service.py     # LiveKit & Agent management
+│       └── dependencies.py
+│
+├── shared/                # Shared domain models & utilities
+│   ├── models/           # SQLAlchemy models (Users, API_Keys)
+│   ├── utils/            # Utility functions
+│   └── exceptions.py     # Custom exceptions
+│
+└── main.py               # FastAPI app initialization
+```
+
+### Vertical Slice Rules
+1. **Each feature is independent**: Models, routes, services, and dependencies live together
+2. **No cross-feature imports**: Features communicate through shared interfaces in `core/` or `shared/`
+3. **Feature-specific dependencies**: Each feature can have its own dependency injection
+4. **Self-contained testing**: Each feature should be testable in isolation
+
+## Authentication: Keycloak Integration
+
+### Migration Strategy
+- **Current**: Custom API key authentication with SHA-256 password hashing
+- **Target**: Keycloak OAuth2/OIDC with JWT tokens
+- **Transition**: Support both during migration period
+
+### Keycloak Implementation Guidelines
+
+#### 1. Keycloak Client Configuration
+```python
+# core/security.py
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from jose import jwt, JWTError
+import httpx
+
+class KeycloakAuth:
+    def __init__(self):
+        self.keycloak_url = os.getenv("KEYCLOAK_URL")
+        self.realm = os.getenv("KEYCLOAK_REALM")
+        self.client_id = os.getenv("KEYCLOAK_CLIENT_ID")
+        self.client_secret = os.getenv("KEYCLOAK_CLIENT_SECRET")
+        self.public_key = self._get_public_key()
+    
+    async def verify_token(self, token: str) -> dict:
+        """Verify JWT token with Keycloak public key"""
+        # Use jose.jwt to verify and decode
+        pass
+    
+    async def get_user_info(self, token: str) -> dict:
+        """Get user info from Keycloak userinfo endpoint"""
+        pass
+```
+
+#### 2. FastAPI Dependency for Keycloak
+```python
+# core/dependencies.py
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPBearer
+
+security = HTTPBearer()
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    keycloak_auth: KeycloakAuth = Depends(get_keycloak_auth)
+) -> dict:
+    """FastAPI dependency to get current authenticated user"""
+    token = credentials.credentials
+    user_info = await keycloak_auth.verify_token(token)
+    return user_info
+```
+
+#### 3. Feature-Level Auth Dependencies
+```python
+# features/auth/dependencies.py
+from core.dependencies import get_current_user
+
+# Feature-specific auth if needed
+async def require_admin(user: dict = Depends(get_current_user)):
+    if "admin" not in user.get("realm_access", {}).get("roles", []):
+        raise HTTPException(403, "Admin access required")
+    return user
+```
+
+### Keycloak Best Practices
+- Use **public key verification** (RS256) instead of calling Keycloak on every request
+- Cache public keys with TTL
+- Use **token introspection** only when necessary (e.g., revocation checks)
+- Implement **refresh token rotation**
+- Store user mapping: Keycloak user ID → internal user ID (if needed)
+- Use **Keycloak roles** for authorization, not custom logic
+
+## FastAPI Best Practices
+
+### 1. Dependency Injection
+- **Always use FastAPI dependencies** for shared logic (auth, DB sessions, etc.)
+- Use `Depends()` for dependency injection, not global variables
+- Create dependency factories for configurable dependencies
+
+```python
+# ✅ Good
+async def get_db() -> AsyncSession:
+    async with get_async_session() as session:
+        yield session
+
+@app.get("/items")
+async def get_items(db: AsyncSession = Depends(get_db)):
+    pass
+
+# ❌ Bad
+db = get_session()
+@app.get("/items")
+async def get_items():
+    pass
+```
+
+### 2. Pydantic Models
+- Use **Pydantic v2** features (`Field`, `field_validator`, `model_validator`)
+- Separate request/response models
+- Use `ConfigDict` for model configuration
+- Leverage `Field` for OpenAPI documentation
+
+```python
+# ✅ Good
+class CoverLetterRequest(BaseModel):
+    job_post: str = Field(..., min_length=10, description="Job posting text")
+    user_name: str = Field(..., pattern=r"^[A-Za-z\s]+$")
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {"job_post": "...", "user_name": "John Doe"}
+        }
+    )
+```
+
+### 3. Error Handling
+- Use **HTTPException** for API errors
+- Create custom exception classes in `shared/exceptions.py`
+- Use exception handlers for consistent error responses
+- Never expose internal errors to clients
+
+```python
+# ✅ Good
+from fastapi import HTTPException
+
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError):
+    return JSONResponse(
+        status_code=400,
+        content={"detail": "Invalid input provided"}
+    )
+```
+
+### 4. Async/Await
+- Use **async/await** for I/O operations (DB, HTTP, file operations)
+- Use `asyncio.gather()` for parallel operations
+- Use `AsyncSession` from SQLAlchemy for async DB operations
+
+```python
+# ✅ Good
+async def get_user_data(user_id: int, db: AsyncSession):
+    user = await db.get(User, user_id)
+    return user
+
+# ❌ Bad (blocking)
+def get_user_data(user_id: int, db: Session):
+    user = db.query(User).filter(User.id == user_id).first()
+    return user
+```
+
+### 5. Database Sessions
+- Use **dependency injection** for DB sessions
+- Use context managers or `yield` in dependencies for cleanup
+- Enable connection pooling (already configured)
+- Use `pool_pre_ping=True` for connection health checks
+
+```python
+# ✅ Good
+@asynccontextmanager
+async def get_db_session():
+    async with AsyncSession(engine) as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+```
+
+### 6. Rate Limiting
+- Use **slowapi** (already integrated) or `slowapi` with Redis for distributed systems
+- Apply rate limits at route level, not globally
+- Use different limits for different endpoints
+
+```python
+# ✅ Good
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+limiter = Limiter(key_func=get_remote_address)
+
+@app.post("/generate-cover-letter")
+@limiter.limit("5/minute")
+async def generate_cover_letter(...):
+    pass
+```
+
+### 7. Logging
+- Use **structured logging** (JSON format for production)
+- Log at appropriate levels (INFO, WARNING, ERROR)
+- Include request context (user_id, request_id)
+- Never log sensitive data (passwords, tokens, API keys)
+
+```python
+# ✅ Good
+logger.info(
+    "Cover letter generated",
+    extra={
+        "user_id": user_id,
+        "request_id": request_id,
+        "tokens_used": tokens_used
+    }
+)
+```
+
+### 8. Configuration Management
+- Use **Pydantic Settings** for configuration
+- Load from environment variables
+- Validate configuration on startup
+- Use different configs for dev/staging/prod
+
+```python
+# ✅ Good
+from pydantic_settings import BaseSettings
+
+class Settings(BaseSettings):
+    database_url: str
+    keycloak_url: str
+    gemini_api_key: str
+    
+    model_config = SettingsConfigDict(env_file=".env")
+```
+
+### 9. Response Models
+- Always define **response models** for endpoints
+- Use `response_model` parameter in route decorators
+- Leverage FastAPI's automatic OpenAPI generation
+
+```python
+# ✅ Good
+@app.post(
+    "/generate-cover-letter",
+    response_model=CoverLetterResponse,
+    status_code=200
+)
+async def generate_cover_letter(...):
+    pass
+```
+
+### 10. Background Tasks
+- Use **BackgroundTasks** for non-blocking operations
+- Use Celery or similar for long-running tasks
+- Use FastAPI's `BackgroundTasks` for simple async operations
+
+```python
+# ✅ Good
+from fastapi import BackgroundTasks
+
+@app.post("/generate-cover-letter")
+async def generate_cover_letter(
+    background_tasks: BackgroundTasks,
+    ...
+):
+    background_tasks.add_task(send_notification, user_id)
+    return result
+```
+
+## Code Logic & Flow
+
+### Current Architecture Flow
+
+1. **Request Flow**:
+   - Client → FastAPI Route → Dependency (Auth) → Service → Database/External API → Response
+
+2. **Authentication Flow** (Current):
+   - API Key in `X-API-Key` header → `check_api_key` dependency → `APIKeyManager.validate_api_key()` → `AuthDatabase.check_api_key()` → User lookup
+
+3. **Generation Flow**:
+   - Authenticated request → Generator service → Gemini API → Response formatting → Return
+
+4. **Database Flow**:
+   - SQLAlchemy ORM → Connection Pool → PostgreSQL → Results → Context manager cleanup
+
+### Target Flow (With Keycloak)
+
+1. **Authentication Flow**:
+   - JWT in `Authorization: Bearer <token>` → `get_current_user` dependency → Keycloak token verification → User info extraction → Request proceeds
+
+2. **Authorization Flow**:
+   - User roles from JWT → Feature-level dependency checks → Access granted/denied
+
+## Anti-Patterns to Avoid (No Overengineering)
+
+### ❌ Don't Do This:
+1. **Over-abstraction**: Don't create unnecessary layers (e.g., Repository → Service → Controller when Service is enough)
+2. **Premature optimization**: Don't add caching, queues, or complex patterns until needed
+3. **Excessive inheritance**: Prefer composition over deep inheritance hierarchies
+4. **God objects**: Don't create single classes that do everything
+5. **Complex dependency graphs**: Keep dependencies simple and clear
+6. **Over-engineering patterns**: Don't use patterns (Factory, Strategy, etc.) unless they solve real problems
+
+### ✅ Do This Instead:
+1. **Simple functions/classes**: Start simple, refactor when needed
+2. **FastAPI features**: Use built-in features (dependencies, background tasks, etc.)
+3. **Direct imports**: Import what you need, don't over-abstract
+4. **Feature slices**: Keep features independent but simple
+5. **Pragmatic patterns**: Use patterns only when they add clear value
+
+## Code Style & Standards
+
+### Python Style
+- Follow **PEP 8**
+- Use **type hints** for all function signatures
+- Use **black** for formatting (line length: 100)
+- Use **isort** for imports
+- Maximum function length: 50 lines (extract if longer)
+
+### FastAPI Style
+- Use **async/await** for all endpoints
+- Use **Pydantic models** for all request/response validation
+- Use **tags** for endpoint grouping in OpenAPI docs
+- Use **descriptions** in route decorators and models
+- Use **status_code** parameter explicitly
+
+### Naming Conventions
+- **Files**: `snake_case.py`
+- **Classes**: `PascalCase`
+- **Functions/Variables**: `snake_case`
+- **Constants**: `UPPER_SNAKE_CASE`
+- **Private**: `_leading_underscore`
+
+## Testing Guidelines
+
+### Test Structure
+- Mirror feature structure: `tests/features/{feature_name}/`
+- Use **pytest** with async support
+- Use **pytest-asyncio** for async tests
+- Use **httpx.AsyncClient** for API testing
+
+### Test Best Practices
+- Test each feature slice independently
+- Use fixtures for common setup (DB, auth, etc.)
+- Mock external services (Gemini API, Keycloak)
+- Test happy paths and error cases
+- Keep tests fast and isolated
+
+## Migration Notes
+
+### From Current to Vertical Slicing
+1. **Phase 1**: Create `features/` directory structure
+2. **Phase 2**: Move existing code into feature slices
+3. **Phase 3**: Extract shared code to `core/` and `shared/`
+4. **Phase 4**: Refactor dependencies to use FastAPI DI
+5. **Phase 5**: Add Keycloak integration alongside existing auth
+6. **Phase 6**: Migrate endpoints to use Keycloak
+7. **Phase 7**: Remove old API key auth (if desired)
+
+### Keycloak Migration Steps
+1. Set up Keycloak instance (Docker or cloud)
+2. Create realm and client
+3. Implement `KeycloakAuth` in `core/security.py`
+4. Add `get_current_user` dependency
+5. Update feature routes to use new dependency
+6. Test with both auth methods during transition
+7. Deprecate API key auth gradually
+
+## Environment Variables
+
+Required environment variables:
+- `DATABASE_URL`: PostgreSQL connection string
+- `KEYCLOAK_URL`: Keycloak server URL
+- `KEYCLOAK_REALM`: Realm name
+- `KEYCLOAK_CLIENT_ID`: Client ID
+- `KEYCLOAK_CLIENT_SECRET`: Client secret
+- `GEMINI_API_KEY`: Google Gemini API key
+- `LIVEKIT_URL`: LiveKit server URL
+- `LIVEKIT_API_KEY`: LiveKit API key
+- `LIVEKIT_API_SECRET`: LiveKit API secret
+- `SECRET_KEY`: JWT secret (if still using JWT)
+- `ALGORITHM`: JWT algorithm (if still using JWT)
+
+## Summary
+
+- **Architecture**: Vertical slicing by feature, not by layer
+- **Auth**: Migrate to Keycloak OAuth2/OIDC with JWT
+- **FastAPI**: Use built-in features (dependencies, async, Pydantic)
+- **Simplicity**: Avoid overengineering, start simple
+- **Testing**: Test features independently
+- **Code Quality**: Type hints, async/await, proper error handling
+
