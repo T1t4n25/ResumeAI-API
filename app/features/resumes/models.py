@@ -1,7 +1,9 @@
 """Resumes Feature - Pydantic Models"""
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
 from typing import Optional
+from datetime import datetime
 import base64
+import uuid
 
 
 class CreateResumeRequest(BaseModel):
@@ -74,19 +76,59 @@ class CreateResumeRequest(BaseModel):
     )
 
 
+class ResumeResponse(BaseModel):
+    """Response model for resume"""
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "output_format": "pdf",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z",
+            "pdf_url": "/resumes/550e8400-e29b-41d4-a716-446655440000/pdf",
+            "latex_url": "/resumes/550e8400-e29b-41d4-a716-446655440000/latex"
+        }
+    })
+    
+    id: str = Field(..., description="Unique identifier for the resume")
+    output_format: str = Field(..., description="Output format used (pdf, tex, or both)")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
+    updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
+    pdf_url: Optional[str] = Field(None, description="URL to download PDF version")
+    latex_url: Optional[str] = Field(None, description="URL to download LaTeX source")
+
+
 class CreateResumeResponse(BaseModel):
-    """Response model for resume creation"""
-    pdf_file: Optional[bytes] = Field(
+    """Response model for resume creation (includes file content)"""
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "pdf_file": "base64_encoded_pdf_content...",
+            "tex_file": "\\documentclass{article}...",
+            "output_format": "pdf"
+        }
+    })
+    
+    id: str = Field(..., description="Unique identifier for the resume")
+    pdf_file: Optional[str] = Field(
         None,
-        description="Base64 encoded PDF file content"
+        description="Base64 encoded PDF file content (only if output_format is 'pdf' or 'both')"
     )
     tex_file: Optional[str] = Field(
         None,
-        description="LaTeX source code as string"
+        description="LaTeX source code as string (only if output_format is 'tex' or 'both')"
     )
+    output_format: str = Field(..., description="Output format used")
     
     @field_serializer('pdf_file')
-    def serialize_pdf(self, pdf_file: Optional[bytes]) -> Optional[str]:
+    def serialize_pdf(self, pdf_file: Optional[str]) -> Optional[str]:
         if pdf_file is None:
             return None
-        return base64.b64encode(pdf_file).decode('utf-8')
+        return pdf_file
+
+
+class ResumeListResponse(BaseModel):
+    """Response model for listing resumes"""
+    data: list[ResumeResponse]
+    total: int
+    limit: int = 10
+    offset: int = 0

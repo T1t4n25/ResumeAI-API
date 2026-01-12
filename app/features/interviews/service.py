@@ -4,7 +4,11 @@ import os
 import datetime
 from typing import Dict, Any
 
-from app.features.interviews.models import StartRoomResponse, StartInterviewerResponse
+from app.features.interviews.models import (
+    InterviewRoomResponse,
+    StartRoomResponse,  # Backward compatibility
+    StartInterviewerResponse
+)
 from app.features.interviews.livekit_manager import LiveKitManager
 from app.features.interviews.agent_manager import AgentManager
 
@@ -19,7 +23,7 @@ class InterviewService:
         self.livekit_manager = LiveKitManager(logger=logger)
         self.agent_manager = AgentManager(logger=logger, livekit_manager=self.livekit_manager)
     
-    async def create_room(self, user_id: str, username: str) -> StartRoomResponse:
+    async def create_room(self, user_id: str, username: str) -> InterviewRoomResponse:
         """
         Create a LiveKit room for AI interview.
         
@@ -36,11 +40,14 @@ class InterviewService:
         
         logger.info(f"Created interview room {room_name} for user {username}")
         
-        return StartRoomResponse(
+        from datetime import datetime
+        return InterviewRoomResponse(
+            id=room_name,  # Use room_name as ID
             room_name=room_name,
             token=user_token,
             websocket_url=os.getenv("LIVEKIT_URL", ""),
-            message="Room created successfully. Use the token to join the room."
+            status="active",
+            created_at=datetime.utcnow()
         )
     
     async def start_interviewer(
@@ -66,6 +73,7 @@ class InterviewService:
         
         return StartInterviewerResponse(
             message=f"AI interviewer started in room {room_name}.",
+            room_id=room_name,
             room_name=room_name
         )
 

@@ -41,7 +41,13 @@ class ResumeService:
             if output_format == "tex":
                 tex_content = resume_generator.generate_tex()
                 logger.info(f"Tex generated successfully for user {username}")
-                return CreateResumeResponse(pdf_file=None, tex_file=tex_content)
+                import uuid
+                return CreateResumeResponse(
+                    id=str(uuid.uuid4()),
+                    pdf_file=None,
+                    tex_file=tex_content,
+                    output_format="tex"
+                )
             
             elif output_format == "pdf":
                 try:
@@ -50,7 +56,14 @@ class ResumeService:
                     resume_generator.cleanup()  # Clean up temporary files
                     
                     logger.info(f"PDF generated successfully for user {username}")
-                    return CreateResumeResponse(pdf_file=pdf_content, tex_file=None)
+                    import uuid
+                    import base64
+                    return CreateResumeResponse(
+                        id=str(uuid.uuid4()),
+                        pdf_file=base64.b64encode(pdf_content).decode('utf-8'),
+                        tex_file=None,
+                        output_format="pdf"
+                    )
                 
                 except subprocess.CalledProcessError as e:
                     logger.error(f"LaTeX compilation failed for user {username}: {e.stderr.decode()}")
@@ -68,7 +81,14 @@ class ResumeService:
                     pdf_content = pdf_path.read_bytes()
                     resume_generator.cleanup()  # Clean up temporary files
                     logger.info(f"PDF & Tex generated successfully for user {username}")
-                    return CreateResumeResponse(pdf_file=pdf_content, tex_file=tex_content)
+                    import uuid
+                    import base64
+                    return CreateResumeResponse(
+                        id=str(uuid.uuid4()),
+                        pdf_file=base64.b64encode(pdf_content).decode('utf-8'),
+                        tex_file=tex_content,
+                        output_format="both"
+                    )
                 
                 except subprocess.CalledProcessError as e:
                     logger.error(f"LaTeX compilation failed for user {username}: {e.stderr.decode()}")

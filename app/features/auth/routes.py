@@ -63,7 +63,7 @@ async def refresh_access_token(
 
 
 @router.get(
-    "/token-info",
+    "/tokens/info",
     summary="Get token information",
     description="Decode and return token payload information (for debugging)"
 )
@@ -77,4 +77,25 @@ async def get_token_info(
     token = credentials.credentials
     token_info = await auth_service.get_token_info(token)
     return token_info
+
+
+# ============================================================================
+# DEPRECATED ENDPOINTS - Backward compatibility
+# ============================================================================
+
+@router.get(
+    "/token-info",
+    summary="[DEPRECATED] Get token information",
+    description="⚠️ DEPRECATED: Use GET /auth/tokens/info instead. This endpoint will be removed in a future version.",
+    deprecated=True
+)
+async def get_token_info_deprecated(
+    credentials = Security(security)
+) -> Dict[str, Any]:
+    """
+    [DEPRECATED] Get token information by decoding the JWT token.
+    
+    This endpoint is deprecated. Please use GET /auth/tokens/info instead.
+    """
+    return await get_token_info(credentials)
 
