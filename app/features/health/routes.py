@@ -40,15 +40,75 @@ async def root(request: Request):
         "version": settings.api_version,
         "environment": settings.environment,
         "endpoints": {
-            "auth": ["/auth/me", "/auth/refresh", "/auth/token-info"],
-            "generation": [
-                "/cover-letters/generate",
-                "/project-descriptions/generate",
-                "/summaries/generate",
-                "/resumes/create"
-            ],
-            "interviews": ["/interviews/start-room", "/interviews/start-interviewer"],
-            "public": ["/health", "/"],
-            "docs": ["/docs", "/redoc", "/openapi.json"]
+            "auth": {
+                "GET /auth/me": "Get current user information",
+                "POST /auth/refresh": "Refresh access token",
+                "GET /auth/tokens/info": "Get token information"
+            },
+            "cover_letters": {
+                "POST /cover-letters": "Create a new cover letter",
+                "GET /cover-letters": "List all cover letters",
+                "GET /cover-letters/:id": "Get specific cover letter",
+                "DELETE /cover-letters/:id": "Delete cover letter"
+            },
+            "project_descriptions": {
+                "POST /project-descriptions": "Create a new project description",
+                "GET /project-descriptions": "List all project descriptions",
+                "GET /project-descriptions/:id": "Get specific project description"
+            },
+            "summaries": {
+                "POST /summaries": "Create a new professional summary",
+                "GET /summaries": "List all summaries",
+                "GET /summaries/:id": "Get specific summary"
+            },
+            "resumes": {
+                "POST /resumes": "Create a new resume",
+                "GET /resumes": "List all resumes",
+                "GET /resumes/:id": "Get specific resume",
+                "GET /resumes/:id/pdf": "Download resume PDF",
+                "GET /resumes/:id/latex": "Get resume LaTeX source",
+                "PATCH /resumes/:id": "Update resume",
+                "DELETE /resumes/:id": "Delete resume"
+            },
+            "interviews": {
+                "POST /interviews/rooms": "Create interview room",
+                "GET /interviews/rooms": "List all interview rooms",
+                "GET /interviews/rooms/:id": "Get specific interview room",
+                "POST /interviews/rooms/:id/start": "Start AI interviewer",
+                "DELETE /interviews/rooms/:id": "End interview session"
+            },
+            "public": {
+                "GET /health": "Health check",
+                "GET /": "API information"
+            },
+            "docs": {
+                "GET /docs": "Interactive API documentation (Swagger UI)",
+                "GET /redoc": "Alternative API documentation (ReDoc)",
+                "GET /openapi.json": "OpenAPI schema"
+            },
+            "deprecated": {
+                "POST /cover-letters/generate": "[DEPRECATED] Use POST /cover-letters",
+                "POST /project-descriptions/generate": "[DEPRECATED] Use POST /project-descriptions",
+                "POST /summaries/generate": "[DEPRECATED] Use POST /summaries",
+                "POST /resumes/create": "[DEPRECATED] Use POST /resumes",
+                "POST /interviews/start-room": "[DEPRECATED] Use POST /interviews/rooms",
+                "GET /auth/token-info": "[DEPRECATED] Use GET /auth/tokens/info"
+            }
+        },
+        "architecture": {
+            "style": "RESTful",
+            "authentication": "Keycloak JWT (Bearer token)",
+            "response_format": "JSON",
+            "status_codes": {
+                "200": "OK (successful GET, PATCH)",
+                "201": "Created (successful POST)",
+                "204": "No Content (successful DELETE)",
+                "400": "Bad Request (invalid input)",
+                "401": "Unauthorized (missing/invalid auth)",
+                "403": "Forbidden (insufficient permissions)",
+                "404": "Not Found (resource doesn't exist)",
+                "429": "Too Many Requests (rate limit exceeded)",
+                "500": "Internal Server Error"
+            }
         }
     }
