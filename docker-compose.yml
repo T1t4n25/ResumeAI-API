@@ -51,10 +51,11 @@ services:
       KC_DB_URL_DATABASE: ${KEYCLOAK_DB:-keycloak}
       KC_DB_USERNAME: ${POSTGRES_USER:-postgres}
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      KC_HOSTNAME_STRICT: false
-      KC_PROXY: edge
-      KC_HOSTNAME_STRICT_HTTPS: false
-      KC_HTTP_ENABLED: true
+# --- Proxy Settings (Crucial for Nginx) ---
+      KC_PROXY: edge               # Tells Keycloak Nginx is handling SSL
+      KC_HOSTNAME: auth.zeyad.tech # The domain users see
+      KC_HTTP_ENABLED: "true"      # Allows Nginx to talk to Keycloak via HTTP
+      
       KC_HTTP_PORT: 8080
       KC_HTTP_RELATIVE_PATH: /
       KC_HEALTH_ENABLED: true
