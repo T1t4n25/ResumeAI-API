@@ -41,7 +41,7 @@ A comprehensive FastAPI-based backend service that leverages Google's Gemini AI 
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/resume-assistant-api.git
+git clone https://github.com/T1t4n25/ResumeAI-API.git
 cd resume-assistant-api
 ```
 
