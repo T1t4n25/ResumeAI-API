@@ -40,30 +40,32 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: resume_flow_keycloak
-    command: start --optimized
+    command:
+    - start 
+    - --optimized
     restart: unless-stopped
     environment:
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      # --- Database (Existing) ---
       KC_DB: postgres
       KC_DB_URL_HOST: keycloak_db
-      KC_DB_URL_PORT: 5432
       KC_DB_URL_DATABASE: ${KEYCLOAK_DB:-keycloak}
       KC_DB_USERNAME: ${POSTGRES_USER:-postgres}
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-# --- Proxy Settings (Crucial for Nginx) ---
-      KC_PROXY: edge               # Tells Keycloak Nginx is handling SSL
-      KC_HOSTNAME: auth.zeyad.tech # The domain users see
-      KC_HTTP_ENABLED: "true"      # Allows Nginx to talk to Keycloak via HTTP
+
+      # --- New Networking/Proxy Settings for v25/v26 ---
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin} # Newer versions prefer this
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
       
-      KC_HTTP_PORT: 8080
-      KC_HTTP_RELATIVE_PATH: /
-      KC_HEALTH_ENABLED: true
-      # Enable CORS for FastAPI
-      KC_HTTP_CORS_ORIGINS: "*"
-      KC_HTTP_CORS_ALLOWED_METHODS: "GET,POST,PUT,DELETE,OPTIONS"
-      KC_HTTP_CORS_ALLOWED_HEADERS: "*"
-      KC_HTTP_CORS_ALLOW_CREDENTIALS: true
+      KC_PROXY_PROTOCOL: https       # Tells Keycloak the user is on HTTPS
+      KC_PROXY_HEADERS: xforwarded   # Explicitly trust Nginx headers
+      
+      KC_HOSTNAME: auth.zeyad.tech
+      KC_HOSTNAME_STRICT: "true"
+      KC_HTTP_ENABLED: "true"
+      
+      # Health and Metrics
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
     ports:
       - "${KEYCLOAK_PORT:-8080}:8080"
     depends_on:
