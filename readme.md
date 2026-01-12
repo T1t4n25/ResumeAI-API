@@ -42,7 +42,7 @@ A comprehensive FastAPI-based backend service that leverages Google's Gemini AI 
 
 ```bash
 git clone https://github.com/T1t4n25/ResumeAI-API.git
-cd resume-assistant-api
+cd ResumeAI-API
 ```
 
 2. Create and activate a virtual environment:
