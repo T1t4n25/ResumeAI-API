@@ -42,7 +42,6 @@ services:
     container_name: resume_flow_keycloak
     command:
     - start 
-    - --optimized
     restart: unless-stopped
     environment:
       # --- Database (Existing) ---
