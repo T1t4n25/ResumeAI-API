@@ -140,22 +140,6 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Database initialization failed: {str(e)}")
         raise
-    
-    # Update IP address for dynamic DNS (if configured)
-    if settings.dynu_pass:
-        try:
-            response = httpx.get(
-                f"http://api-ipv4.dynu.com/nic/update",
-                params={
-                    "hostname": "resumeai.webredirect.org",
-                    "password": settings.dynu_pass
-                },
-                timeout=10.0
-            )
-            logger.info(f"IP address updated: {response.text}")
-        except Exception as e:
-            logger.warning(f"Failed to update IP address: {str(e)}")
-    
     yield
     
     # Shutdown
@@ -167,22 +151,6 @@ async def lifespan(app: FastAPI):
         logger.info("Database connections closed")
     except Exception as e:
         logger.error(f"Error closing database: {str(e)}")
-    
-    # Log off IP address (if configured)
-    if settings.dynu_pass:
-        try:
-            httpx.get(
-                f"http://api.dynu.com/nic/update",
-                params={
-                    "hostname": "resumeai.webredirect.org",
-                    "password": settings.dynu_pass,
-                    "offline": "yes"
-                },
-                timeout=10.0
-            )
-            logger.info("IP address logged off")
-        except Exception as e:
-            logger.warning(f"Failed to log off IP address: {str(e)}")
     
     logger.info("Shutdown complete")
 
