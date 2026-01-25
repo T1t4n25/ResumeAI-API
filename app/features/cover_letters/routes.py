@@ -3,12 +3,12 @@ from fastapi import APIRouter, Depends, Request, status, HTTPException
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from typing import Dict, Any, List
-
+import uuid
+from datetime import datetime
 from app.features.cover_letters.models import (
     CoverLetterCreate,
     CoverLetterResponse,
     CoverLetterListResponse,
-    CoverLetterRequest  # Backward compatibility
 )
 from app.features.cover_letters.service import cover_letter_service
 from app.core.security import get_current_user
@@ -39,16 +39,12 @@ async def create_cover_letter(
     Requires Keycloak JWT token in Authorization header.
     """
     result = cover_letter_service.generate_cover_letter(data)
-    # Generate ID (in real implementation, this would come from database)
-    import uuid
-    from datetime import datetime
-    
     return CoverLetterResponse(
-        id=str(uuid.uuid4()),
+        id=str(uuid.uuid7()),
         cover_letter=result.cover_letter,
         tokens_used=result.tokens_used,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(datetime.UTC),
+        updated_at=datetime.now(datetime.UTC)
     )
 
 
@@ -126,30 +122,3 @@ async def delete_cover_letter(
         detail=f"Cover letter with id {id} not found"
     )
 
-
-# ============================================================================
-# DEPRECATED ENDPOINTS - Backward compatibility
-# ============================================================================
-
-@router.post(
-    "/generate",
-    status_code=status.HTTP_201_CREATED,
-    response_model=CoverLetterResponse,
-    summary="[DEPRECATED] Generate cover letter",
-    description="⚠️ DEPRECATED: Use POST /cover-letters instead. This endpoint will be removed in a future version.",
-    deprecated=True
-)
-@limiter.limit("5/minute")
-async def generate_cover_letter_deprecated(
-    request: Request,
-    data: CoverLetterRequest,  # Using old name for compatibility
-    user: Dict[str, Any] = Depends(get_current_user)
-) -> CoverLetterResponse:
-    """
-    [DEPRECATED] Generate a personalized cover letter.
-    
-    This endpoint is deprecated. Please use POST /cover-letters instead.
-    """
-    # Convert old model to new model
-    create_data = CoverLetterCreate(**data.model_dump())
-    return await create_cover_letter(request, create_data, user)

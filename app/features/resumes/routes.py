@@ -39,9 +39,9 @@ async def create_resume(
     Requires Keycloak JWT token in Authorization header.
     """
     username = user.get("preferred_username", "unknown")
-    result = resume_service.create_resume(data, username=username)
+    result = resume_service.create_resume_latex(data, username=username)
     
-    # Service now returns CreateResumeResponse with id and base64-encoded pdf_file
+    # Service now returns CreateResumeResponse with id and tex_file
     return result
 
 
@@ -68,53 +68,6 @@ async def get_resume(
         detail=f"Resume with id {id} not found"
     )
 
-
-@router.get(
-    "/{id}/pdf",
-    summary="Download resume PDF",
-    description="Download the PDF version of a specific resume"
-)
-@limiter.limit("10/minute")
-async def download_resume_pdf(
-    request: Request,
-    id: str,
-    user: Dict[str, Any] = Depends(get_current_user)
-) -> Response:
-    """
-    Download the PDF version of a specific resume.
-    
-    NOTE: Currently returns 404. Persistence layer needs to be implemented.
-    """
-    # TODO: Implement database lookup and file serving
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Resume PDF with id {id} not found"
-    )
-
-
-@router.get(
-    "/{id}/latex",
-    summary="Get resume LaTeX source",
-    description="Retrieve the LaTeX source code of a specific resume"
-)
-@limiter.limit("10/minute")
-async def get_resume_latex(
-    request: Request,
-    id: str,
-    user: Dict[str, Any] = Depends(get_current_user)
-) -> Dict[str, str]:
-    """
-    Get the LaTeX source code of a specific resume.
-    
-    NOTE: Currently returns 404. Persistence layer needs to be implemented.
-    """
-    # TODO: Implement database lookup
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Resume LaTeX source with id {id} not found"
-    )
-
-
 @router.get(
     "",
     response_model=ResumeListResponse,
@@ -126,7 +79,6 @@ async def list_resumes(
     request: Request,
     limit: int = 10,
     offset: int = 0,
-    format: str | None = None,
     user: Dict[str, Any] = Depends(get_current_user)
 ) -> ResumeListResponse:
     """
@@ -135,16 +87,10 @@ async def list_resumes(
     Query parameters:
     - limit: Maximum number of results (default: 10)
     - offset: Number of results to skip (default: 0)
-    - format: Filter by output format (pdf, tex, both) - optional
-    
-    NOTE: Currently returns empty list. Persistence layer needs to be implemented.
     """
-    # TODO: Implement database query with filtering
     return ResumeListResponse(
         data=[],
-        total=0,
-        limit=limit,
-        offset=offset
+        total=0
     )
 
 
@@ -195,28 +141,3 @@ async def delete_resume(
         detail=f"Resume with id {id} not found"
     )
 
-
-# ============================================================================
-# DEPRECATED ENDPOINTS - Backward compatibility
-# ============================================================================
-
-@router.post(
-    "/create",
-    status_code=status.HTTP_201_CREATED,
-    response_model=CreateResumeResponse,
-    summary="[DEPRECATED] Create complete resume",
-    description="⚠️ DEPRECATED: Use POST /resumes instead. This endpoint will be removed in a future version.",
-    deprecated=True
-)
-@limiter.limit("5/minute")
-async def create_resume_deprecated(
-    request: Request,
-    data: CreateResumeRequest,
-    user: Dict[str, Any] = Depends(get_current_user)
-) -> CreateResumeResponse:
-    """
-    [DEPRECATED] Generate a complete resume using LaTeX.
-    
-    This endpoint is deprecated. Please use POST /resumes instead.
-    """
-    return await create_resume(request, data, user)

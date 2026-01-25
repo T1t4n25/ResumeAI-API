@@ -3,12 +3,12 @@ from fastapi import APIRouter, Depends, Request, status, HTTPException
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from typing import Dict, Any
-
+import uuid
+from datetime import datetime
 from app.features.summaries.models import (
     SummaryCreate,
     SummaryResponse,
     SummaryListResponse,
-    SummaryRequest  # Backward compatibility
 )
 from app.features.summaries.service import summary_service
 from app.core.security import get_current_user
@@ -39,19 +39,15 @@ async def create_summary(
     Requires Keycloak JWT token in Authorization header.
     """
     result = summary_service.generate_summary(data)
-    # Generate ID (in real implementation, this would come from database)
-    import uuid
-    from datetime import datetime
-    
     return SummaryResponse(
-        id=str(uuid.uuid4()),
+        id=str(uuid.uuid7()),
         summary=result.summary,
         current_title=data.current_title,
         years_experience=data.years_experience,
         skills=data.skills,
         achievements=data.achievements,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(datetime.UTC),
+        updated_at=datetime.now(datetime.UTC)
     )
 
 
@@ -104,31 +100,3 @@ async def list_summaries(
         limit=limit,
         offset=offset
     )
-
-
-# ============================================================================
-# DEPRECATED ENDPOINTS - Backward compatibility
-# ============================================================================
-
-@router.post(
-    "/generate",
-    status_code=status.HTTP_201_CREATED,
-    response_model=SummaryResponse,
-    summary="[DEPRECATED] Generate professional summary",
-    description="⚠️ DEPRECATED: Use POST /summaries instead. This endpoint will be removed in a future version.",
-    deprecated=True
-)
-@limiter.limit("5/minute")
-async def generate_summary_deprecated(
-    request: Request,
-    data: SummaryRequest,  # Using old name for compatibility
-    user: Dict[str, Any] = Depends(get_current_user)
-) -> SummaryResponse:
-    """
-    [DEPRECATED] Generate a professional summary for resume.
-    
-    This endpoint is deprecated. Please use POST /summaries instead.
-    """
-    # Convert old model to new model
-    create_data = SummaryCreate(**data.model_dump())
-    return await create_summary(request, create_data, user)
