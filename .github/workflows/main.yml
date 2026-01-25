@@ -1,4 +1,4 @@
-name: Deploy to EC2
+name: Deploy to VPS
 
 on:
   push:
@@ -11,18 +11,15 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Deploy to EC2
+    - name: Deploy to VPS
       env:
-        PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-        HOST: ${{ secrets.EC2_HOST }}
+        PRIVATE_KEY: ${{ secrets.VPS_PRIVATE_KEY }}
+        HOST: ${{ secrets.VPS_HOST }}
       run: |
         echo "$PRIVATE_KEY" > private_key
         chmod 600 private_key
         ssh -o StrictHostKeyChecking=no -i private_key ubuntu@$HOST <<EOF
-          cd /home/ubuntu/resume-ai-api
+          cd /home/ubuntu/backend/ResumeAI-API
           git pull origin main
-          source venv/bin/activate
-          pip install -r requirements.txt
-          sudo systemctl daemon-reload
-          sudo systemctl restart resumeai-api
+          docker compose --build -d
         EOF
