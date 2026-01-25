@@ -3,12 +3,12 @@ from fastapi import APIRouter, Depends, Request, status, HTTPException
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from typing import Dict, Any
-
+import uuid
+from datetime import datetime
 from app.features.project_descriptions.models import (
     ProjectDescriptionCreate,
     ProjectDescriptionResponse,
     ProjectDescriptionListResponse,
-    ProjectDescriptionRequest  # Backward compatibility
 )
 from app.features.project_descriptions.service import project_description_service
 from app.core.security import get_current_user
@@ -39,17 +39,13 @@ async def create_project_description(
     Requires Keycloak JWT token in Authorization header.
     """
     result = project_description_service.generate_description(data)
-    # Generate ID (in real implementation, this would come from database)
-    import uuid
-    from datetime import datetime
-    
     return ProjectDescriptionResponse(
-        id=str(uuid.uuid4()),
+        id=str(uuid.uuid7()),
         project_description=result.project_description,
         project_name=data.project_name,
         skills=data.skills,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(datetime.UTC),
+        updated_at=datetime.now(datetime.UTC)
     )
 
 
@@ -102,31 +98,3 @@ async def list_project_descriptions(
         limit=limit,
         offset=offset
     )
-
-
-# ============================================================================
-# DEPRECATED ENDPOINTS - Backward compatibility
-# ============================================================================
-
-@router.post(
-    "/generate",
-    status_code=status.HTTP_201_CREATED,
-    response_model=ProjectDescriptionResponse,
-    summary="[DEPRECATED] Generate project description",
-    description="⚠️ DEPRECATED: Use POST /project-descriptions instead. This endpoint will be removed in a future version.",
-    deprecated=True
-)
-@limiter.limit("5/minute")
-async def generate_project_description_deprecated(
-    request: Request,
-    data: ProjectDescriptionRequest,  # Using old name for compatibility
-    user: Dict[str, Any] = Depends(get_current_user)
-) -> ProjectDescriptionResponse:
-    """
-    [DEPRECATED] Generate a professional project description for CV.
-    
-    This endpoint is deprecated. Please use POST /project-descriptions instead.
-    """
-    # Convert old model to new model
-    create_data = ProjectDescriptionCreate(**data.model_dump())
-    return await create_project_description(request, create_data, user)

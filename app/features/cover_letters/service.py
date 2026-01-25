@@ -1,6 +1,6 @@
 """Cover Letters Feature - Business Logic Service"""
 import logging
-from app.features.cover_letters.models import CoverLetterRequest, CoverLetterResponse
+from app.features.cover_letters.models import CoverLetterCreate, CoverLetterResponse
 from app.features.cover_letters.generator import CoverLetterGenerator
 
 
@@ -13,7 +13,7 @@ class CoverLetterService:
     def __init__(self):
         self.generator = CoverLetterGenerator()
     
-    def generate_cover_letter(self, request: CoverLetterRequest) -> CoverLetterResponse:
+    def generate_cover_letter(self, request: CoverLetterCreate) -> CoverLetterResponse:
         """
         Generate a personalized cover letter using AI.
         

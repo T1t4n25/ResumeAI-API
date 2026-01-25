@@ -1,7 +1,7 @@
 """
 Authentication feature - API routes
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Security
+from fastapi import APIRouter, Depends, Security
 from fastapi.security import HTTPBearer
 from typing import Dict, Any
 from slowapi import Limiter
@@ -17,6 +17,9 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 # Security scheme for bearer tokens
 security = HTTPBearer()
 
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
 
 @router.get(
     "/me",
@@ -24,6 +27,7 @@ security = HTTPBearer()
     summary="Get current user information",
     description="Returns information about the currently authenticated user from Keycloak"
 )
+@limiter.limit("10/minute")
 async def get_current_user_info(
     user: Dict[str, Any] = Depends(get_authenticated_user)
 ) -> UserInfoResponse:
@@ -40,6 +44,7 @@ async def get_current_user_info(
     summary="Refresh access token",
     description="Refresh access token using refresh token from Keycloak"
 )
+@limiter.limit("10/minute")
 async def refresh_access_token(
     refresh_token: str
 ) -> TokenInfoResponse:
@@ -67,6 +72,7 @@ async def refresh_access_token(
     summary="Get token information",
     description="Decode and return token payload information (for debugging)"
 )
+@limiter.limit("10/minute")
 async def get_token_info(
     credentials = Security(security)
 ) -> Dict[str, Any]:
@@ -77,25 +83,4 @@ async def get_token_info(
     token = credentials.credentials
     token_info = await auth_service.get_token_info(token)
     return token_info
-
-
-# ============================================================================
-# DEPRECATED ENDPOINTS - Backward compatibility
-# ============================================================================
-
-@router.get(
-    "/token-info",
-    summary="[DEPRECATED] Get token information",
-    description="⚠️ DEPRECATED: Use GET /auth/tokens/info instead. This endpoint will be removed in a future version.",
-    deprecated=True
-)
-async def get_token_info_deprecated(
-    credentials = Security(security)
-) -> Dict[str, Any]:
-    """
-    [DEPRECATED] Get token information by decoding the JWT token.
-    
-    This endpoint is deprecated. Please use GET /auth/tokens/info instead.
-    """
-    return await get_token_info(credentials)
 

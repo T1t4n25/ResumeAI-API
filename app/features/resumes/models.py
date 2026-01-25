@@ -68,12 +68,6 @@ class CreateResumeRequest(BaseModel):
         description="List of soft skills",
         examples=[["Communication", "Problem Solving"]]
     )
-    output_format: str = Field(
-        ...,
-        description="Desired output format",
-        examples=["pdf"],
-        pattern="^(pdf|tex|both)$"
-    )
 
 
 class ResumeResponse(BaseModel):
@@ -81,20 +75,16 @@ class ResumeResponse(BaseModel):
     model_config = ConfigDict(json_schema_extra={
         "example": {
             "id": "550e8400-e29b-41d4-a716-446655440000",
-            "output_format": "pdf",
             "created_at": "2024-01-01T00:00:00Z",
             "updated_at": "2024-01-01T00:00:00Z",
-            "pdf_url": "/resumes/550e8400-e29b-41d4-a716-446655440000/pdf",
-            "latex_url": "/resumes/550e8400-e29b-41d4-a716-446655440000/latex"
+            "tex_file": "\\documentclass{article}..."
         }
     })
     
     id: str = Field(..., description="Unique identifier for the resume")
-    output_format: str = Field(..., description="Output format used (pdf, tex, or both)")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
     updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
-    pdf_url: Optional[str] = Field(None, description="URL to download PDF version")
-    latex_url: Optional[str] = Field(None, description="URL to download LaTeX source")
+    tex_file: Optional[str] = Field(None, description="LaTeX source code as string")
 
 
 class CreateResumeResponse(BaseModel):
@@ -102,29 +92,15 @@ class CreateResumeResponse(BaseModel):
     model_config = ConfigDict(json_schema_extra={
         "example": {
             "id": "550e8400-e29b-41d4-a716-446655440000",
-            "pdf_file": "base64_encoded_pdf_content...",
             "tex_file": "\\documentclass{article}...",
-            "output_format": "pdf"
         }
     })
     
     id: str = Field(..., description="Unique identifier for the resume")
-    pdf_file: Optional[str] = Field(
-        None,
-        description="Base64 encoded PDF file content (only if output_format is 'pdf' or 'both')"
-    )
     tex_file: Optional[str] = Field(
         None,
-        description="LaTeX source code as string (only if output_format is 'tex' or 'both')"
+        description="LaTeX source code as string"
     )
-    output_format: str = Field(..., description="Output format used")
-    
-    @field_serializer('pdf_file')
-    def serialize_pdf(self, pdf_file: Optional[str]) -> Optional[str]:
-        if pdf_file is None:
-            return None
-        return pdf_file
-
 
 class ResumeListResponse(BaseModel):
     """Response model for listing resumes"""
