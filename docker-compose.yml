@@ -101,6 +101,7 @@ services:
       API_VER: ${API_VER:-5.0.0}
       ENVIRONMENT: ${ENVIRONMENT:-development}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      UVICORN_RELOAD: true
     ports:
       - "${API_PORT:-8000}:8000"
     depends_on:

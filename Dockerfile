@@ -1,13 +1,4 @@
-FROM python:3.11-slim
-
-# Install system dependencies for LaTeX compilation
-RUN apt-get update && apt-get install -y \
-    curl \
-    texlive-latex-base \
-    texlive-latex-extra \
-    texlive-fonts-recommended \
-    latexmk \
-    && rm -rf /var/lib/apt/lists/*
+FROM python:3.14-slim-trixie
 
 # Set working directory
 WORKDIR /app
@@ -34,5 +25,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 
 # Run the application
 # CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-server-header", "--loop", "uvloop"]
 
