@@ -62,6 +62,8 @@ services:
       
       KC_HOSTNAME: auth.zeyad.tech
       KC_HOSTNAME_STRICT: "true"
+      KC_HTTP_ENABLED: "true"
+      
     ports:
       - "${KEYCLOAK_PORT:-8080}:8080"
     depends_on:
