@@ -57,8 +57,7 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
       
-      # --- Networking/Proxy ---
-      KC_PROXY_PROTOCOL: https
+      # --- Networking/Proxy (Nginx terminates TLS, forwards HTTP) ---
       KC_PROXY_HEADERS: xforwarded
       
       KC_HOSTNAME: auth.zeyad.tech
