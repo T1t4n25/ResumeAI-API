@@ -1,20 +1,16 @@
 """
 Authentication feature - Business logic
 """
-import aiohttp
+import httpx
 from typing import Dict, Any
 from fastapi import HTTPException, status
 
-from app.core.auth import KeycloakJWTHandler, KeycloakConfig
-from app.core.auth.auth_exceptions import AuthException
+from app.core.config import settings
+from app.core.security import 
 
 
 class AuthService:
     """Authentication service for Keycloak operations"""
-    
-    def __init__(self):
-        self.config = KeycloakConfig()
-        self.jwt_handler = KeycloakJWTHandler(config=self.config)
     
     async def get_user_info(self, token: str) -> Dict[str, Any]:
         """
@@ -24,25 +20,13 @@ class AuthService:
             token: JWT access token
             
         Returns:
-            User information dictionary from token payload
+            User information dictionary
         """
         try:
-            # Verify token and get payload
-            payload = await self.jwt_handler.verify_token(token)
-            
-            # Return user info from token payload
-            return {
-                "sub": payload.get("sub"),
-                "preferred_username": payload.get("preferred_username"),
-                "email": payload.get("email"),
-                "email_verified": payload.get("email_verified"),
-                "name": payload.get("name"),
-                "given_name": payload.get("given_name"),
-                "family_name": payload.get("family_name"),
-                "realm_access": payload.get("realm_access", {}),
-                "resource_access": payload.get("resource_access", {}),
-            }
-        except AuthException:
+            # Verify token and get user info
+            user_info = await keycloak_auth.get_user_info(token)
+            return user_info
+        except HTTPException:
             raise
         except Exception as e:
             raise HTTPException(
@@ -61,9 +45,9 @@ class AuthService:
             Token payload dictionary
         """
         try:
-            payload = await self.jwt_handler.verify_token(token)
+            payload = await keycloak_auth.verify_token(token)
             return payload
-        except AuthException:
+        except HTTPException:
             raise
         except Exception as e:
             raise HTTPException(
@@ -82,30 +66,30 @@ class AuthService:
             New token information
         """
         try:
-            async with aiohttp.ClientSession() as session:
+            async with httpx.AsyncClient(timeout=10.0) as client:
                 data = {
                     "grant_type": "refresh_token",
                     "refresh_token": refresh_token,
-                    "client_id": self.config.client_id,
+                    "client_id": settings.keycloak_client_id,
                 }
                 
-                if self.config.client_secret:
-                    data["client_secret"] = self.config.client_secret
+                if settings.keycloak_client_secret:
+                    data["client_secret"] = settings.keycloak_client_secret
                 
-                async with session.post(
-                    self.config.token_url,
+                response = await client.post(
+                    settings.keycloak_token_url,
                     data=data,
-                    headers={"Content-Type": "application/x-www-form-urlencoded"},
-                    timeout=aiohttp.ClientTimeout(total=10)
-                ) as response:
-                    if response.status != 200:
-                        raise HTTPException(
-                            status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail="Failed to refresh token"
-                        )
-                    
-                    return await response.json()
-        except aiohttp.ClientError as e:
+                    headers={"Content-Type": "application/x-www-form-urlencoded"}
+                )
+                
+                if response.status_code != 200:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Failed to refresh token"
+                    )
+                
+                return response.json()
+        except httpx.RequestError as e:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=f"Keycloak service unavailable: {str(e)}"
