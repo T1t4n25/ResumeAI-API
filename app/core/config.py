@@ -9,7 +9,6 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
     
     # Database
-    database_url: str
     postgres_user: str = "postgres"
     postgres_password: str = "postgres"
     postgres_db: str = "resume_flow"
@@ -51,7 +50,10 @@ class Settings(BaseSettings):
         extra="ignore",
         env_prefix=""
     )
-    
+    @property
+    def database_url(self) -> str:
+        return f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}@postgres:{self.postgres_port}/{self.postgres_db}"
+
     @property
     def keycloak_issuer(self) -> str:
         """Get Keycloak issuer URL"""
