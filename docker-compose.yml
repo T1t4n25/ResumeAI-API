@@ -38,34 +38,31 @@ services:
       - resume_flow_network
 
   keycloak:
-    image: quay.io/keycloak/keycloak:latest
+    build:
+      context: ./keycloak
+      dockerfile: Dockerfile
     container_name: resume_flow_keycloak
     command:
     - start 
     - --optimized
     restart: unless-stopped
     environment:
-      # --- Database (Existing) ---
-      KC_DB: postgres
+      # --- Database ---
       KC_DB_URL_HOST: keycloak_db
       KC_DB_URL_DATABASE: ${KEYCLOAK_DB:-keycloak}
       KC_DB_USERNAME: ${POSTGRES_USER:-postgres}
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
 
-      # --- New Networking/Proxy Settings for v25/v26 ---
-      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin} # Newer versions prefer this
+      # --- Admin ---
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
       
-      KC_PROXY_PROTOCOL: https       # Tells Keycloak the user is on HTTPS
-      KC_PROXY_HEADERS: xforwarded   # Explicitly trust Nginx headers
+      # --- Networking/Proxy ---
+      KC_PROXY_PROTOCOL: https
+      KC_PROXY_HEADERS: xforwarded
       
       KC_HOSTNAME: auth.zeyad.tech
       KC_HOSTNAME_STRICT: "true"
-      KC_HTTP_ENABLED: "true"
-      
-      # Health and Metrics
-      KC_HEALTH_ENABLED: "true"
-      KC_METRICS_ENABLED: "true"
     ports:
       - "${KEYCLOAK_PORT:-8080}:8080"
     depends_on:
