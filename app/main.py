@@ -35,6 +35,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger("resume_flow")
 
+# Debug log all settings
+logger.debug("=" * 50)
+logger.debug("Loaded Settings:")
+for key, value in settings.model_dump().items():
+    # Mask sensitive values
+    if any(s in key for s in ["secret", "password", "api_key"]):
+        logger.debug(f"  {key}: ***REDACTED***")
+    else:
+        logger.debug(f"  {key}: {value}")
+logger.debug(f"  database_url: {settings.database_url}")
+logger.debug(f"  keycloak_issuer: {settings.keycloak_issuer}")
+logger.debug("=" * 50)
+
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
