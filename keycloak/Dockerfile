@@ -5,7 +5,8 @@ ENV KC_DB=postgres
 ENV KC_HEALTH_ENABLED=true
 ENV KC_METRICS_ENABLED=true
 ENV KC_HTTP_ENABLED=true
-ENV KC_PROXY=edge
+ENV KC_PROXY_HEADERS=xforwarded
+ENV KC_HOSTNAME_STRICT_HTTPS=false
 
 # Build the optimized Keycloak distribution
 RUN /opt/keycloak/bin/kc.sh build
