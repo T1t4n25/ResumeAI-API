@@ -6,7 +6,7 @@ from typing import Dict, Any
 from fastapi import HTTPException, status
 
 from app.core.config import settings
-from app.core.security import 
+from app.core.security import keycloak_jwt_handler
 
 
 class AuthService:
@@ -24,7 +24,7 @@ class AuthService:
         """
         try:
             # Verify token and get user info
-            user_info = await keycloak_auth.get_user_info(token)
+            user_info = await keycloak_jwt_handler.verify_token(token)
             return user_info
         except HTTPException:
             raise
@@ -45,7 +45,7 @@ class AuthService:
             Token payload dictionary
         """
         try:
-            payload = await keycloak_auth.verify_token(token)
+            payload = await keycloak_jwt_handler.verify_token(token)
             return payload
         except HTTPException:
             raise
