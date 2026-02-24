@@ -1,7 +1,7 @@
 
 import os
 import logging
-import google.genai as genai
+from google import genai
 from dotenv import load_dotenv
 from app.shared.utils.text_utils import reduce_tokens
 
@@ -10,8 +10,8 @@ load_dotenv()
 class CoverLetterGenerator:
     def __init__(self):
         # Configure Gemini API
-        genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
-        self.model = genai.GenerativeModel("gemini-2.5-flash-lite-preview-06-17")
+        self.client = genai.Client(api_key=os.getenv('GEMINI_API_KEY'))
+        self.model_name = "gemini-2.5-flash-lite-preview-06-17"
         self.logger = logging.getLogger("resume_flow")
 
     def generate_cover_letter(self, request):
@@ -77,11 +77,14 @@ Focus solely on the essential content, eliminating any placeholder or template-s
             # Reduce tokens in the prompt
             prompt = reduce_tokens(prompt)
             # Generate content using the model
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt
+            )
             
             return {
                 "cover_letter": response.text,
-                "tokens_used": response.usage_metadata.total_token_count  # Add token tracking if possible
+                "tokens_used": response.usage_metadata.total_token_count
             }
         except Exception as e:
             self.logger.error(f"Cover letter generation failed: {str(e)}")

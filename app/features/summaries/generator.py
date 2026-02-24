@@ -1,7 +1,7 @@
 
 import os
 import logging
-import google.genai as genai
+from google import genai
 from app.features.summaries.models import SummaryRequest
 from app.shared.utils.text_utils import reduce_tokens
 from dotenv import load_dotenv
@@ -10,8 +10,8 @@ load_dotenv()
 
 class SummaryGenerator:
     def __init__(self, model_name="gemini-2.5-flash-lite-preview-06-17"):
-        genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
-        self.model = genai.GenerativeModel(model_name)
+        self.client = genai.Client(api_key=os.getenv('GEMINI_API_KEY'))
+        self.model_name = model_name
         self.logger = logging.getLogger("resume_flow")
 
     def generate_summary(self, request: SummaryRequest) -> str:
@@ -56,7 +56,10 @@ Demonstrated mastery of Python and AWS, consistently driving innovation in micro
             # Reduce tokens in the prompt
             prompt = reduce_tokens(prompt)
             # Generate content using the model
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt
+            )
             return response.text.strip()
         except Exception as e:
             self.logger.error(f"Error generating summary: {str(e)}")
