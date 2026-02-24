@@ -1,15 +1,11 @@
 """Health Feature - API Routes"""
 from fastapi import APIRouter, Request
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 from app.core.config import settings
+from app.core.limiter import limiter
 
 # Create router
 router = APIRouter(tags=["Health"])
-
-# Rate limiter
-limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get(

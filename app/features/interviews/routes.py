@@ -1,7 +1,5 @@
 """Interviews Feature - API Routes (RESTful)"""
 from fastapi import APIRouter, Depends, Request, status, HTTPException
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from typing import Dict, Any
 
 from app.features.interviews.models import (
@@ -16,12 +14,10 @@ from app.features.interviews.models import (
 )
 from app.features.interviews.service import interview_service
 from app.core.security import get_current_user
+from app.core.limiter import limiter
 
 # Create router
 router = APIRouter(prefix="/interviews", tags=["AI Interview"])
-
-# Rate limiter
-limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post(

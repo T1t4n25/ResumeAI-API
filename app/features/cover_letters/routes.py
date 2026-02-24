@@ -1,7 +1,5 @@
 """Cover Letters Feature - API Routes (RESTful)"""
 from fastapi import APIRouter, Depends, Request, status, HTTPException
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from typing import Dict, Any, List
 import uuid
 from datetime import datetime
@@ -12,12 +10,10 @@ from app.features.cover_letters.models import (
 )
 from app.features.cover_letters.service import cover_letter_service
 from app.core.security import get_current_user
+from app.core.limiter import limiter
 
 # Create router
 router = APIRouter(prefix="/cover-letters", tags=["Cover Letters"])
-
-# Rate limiter
-limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post(

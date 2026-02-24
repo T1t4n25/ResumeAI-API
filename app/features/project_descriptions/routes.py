@@ -1,7 +1,5 @@
 """Project Descriptions Feature - API Routes (RESTful)"""
 from fastapi import APIRouter, Depends, Request, status, HTTPException
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from typing import Dict, Any
 import uuid
 from datetime import datetime
@@ -12,12 +10,10 @@ from app.features.project_descriptions.models import (
 )
 from app.features.project_descriptions.service import project_description_service
 from app.core.security import get_current_user
+from app.core.limiter import limiter
 
 # Create router
 router = APIRouter(prefix="/project-descriptions", tags=["Project Descriptions"])
-
-# Rate limiter
-limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post(

@@ -1,24 +1,20 @@
 """
 Authentication feature - API routes
 """
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Depends, Request, Security
 from fastapi.security import HTTPBearer
 from typing import Dict, Any
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 from app.features.auth.models import UserInfoResponse, TokenInfoResponse
 from app.features.auth.service import auth_service
 from app.features.auth.dependencies import get_authenticated_user
+from app.core.limiter import limiter
 
 # Create router for auth feature
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 # Security scheme for bearer tokens
 security = HTTPBearer()
-
-# Rate limiter
-limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get(
@@ -29,6 +25,7 @@ limiter = Limiter(key_func=get_remote_address)
 )
 @limiter.limit("10/minute")
 async def get_current_user_info(
+    request: Request,
     user: Dict[str, Any] = Depends(get_authenticated_user)
 ) -> UserInfoResponse:
     """
@@ -46,6 +43,7 @@ async def get_current_user_info(
 )
 @limiter.limit("10/minute")
 async def refresh_access_token(
+    request: Request,
     refresh_token: str
 ) -> TokenInfoResponse:
     """
@@ -74,6 +72,7 @@ async def refresh_access_token(
 )
 @limiter.limit("10/minute")
 async def get_token_info(
+    request: Request,
     credentials = Security(security)
 ) -> Dict[str, Any]:
     """
