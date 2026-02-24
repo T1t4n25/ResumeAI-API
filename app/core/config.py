@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     postgres_user: str = "postgres"
     postgres_password: str = "postgres"
     postgres_db: str = "resume_flow"
+    postgres_host: str = "postgres"
     postgres_port: int = 5432
     
     # Keycloak
@@ -52,7 +53,7 @@ class Settings(BaseSettings):
     )
     @property
     def database_url(self) -> str:
-        return f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}@postgres:{self.postgres_port}/{self.postgres_db}"
+        return f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
 
     @property
     def keycloak_issuer(self) -> str:

@@ -1,0 +1,53 @@
+# =============================================================================
+# Production Docker Compose — API Server Only
+# =============================================================================
+# Assumes Keycloak and PostgreSQL are already running externally.
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Required environment variables (set in .env or export before running):
+#   POSTGRES_USER       — Database username
+#   POSTGRES_PASSWORD   — Database password
+#   POSTGRES_DB         — Database name
+#   POSTGRES_HOST       — Database host (IP or hostname)
+#   POSTGRES_PORT       — Database port (default: 5432)
+#   KEYCLOAK_URL        — Full Keycloak URL (e.g. https://auth.zeyad.tech)
+#   KEYCLOAK_REALM      — Keycloak realm name
+#   KEYCLOAK_CLIENT_ID  — Keycloak client ID
+#   GEMINI_API_KEY      — Google Gemini API key
+#   API_PORT            — Port to expose the API on (default: 8000)
+# =============================================================================
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: resume_flow_api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      ENVIRONMENT: production
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
