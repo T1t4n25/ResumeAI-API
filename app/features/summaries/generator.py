@@ -1,7 +1,7 @@
 
 import os
 import logging
-import google.generativeai as genai
+import google.genai as genai
 from app.features.summaries.models import SummaryRequest
 from app.shared.utils.text_utils import reduce_tokens
 from dotenv import load_dotenv
