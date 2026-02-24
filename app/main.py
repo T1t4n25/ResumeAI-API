@@ -11,12 +11,12 @@ from typing import List
 
 from fastapi import FastAPI, Request, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 import httpx
 from app.core.config import settings
 from app.core.database import init_db, close_db
+from app.core.limiter import limiter
 
 # Configure logging
 output_dir = Path("logs")
@@ -47,9 +47,6 @@ for key, value in settings.model_dump().items():
 logger.debug(f"  database_url: {settings.database_url}")
 logger.debug(f"  keycloak_issuer: {settings.keycloak_issuer}")
 logger.debug("=" * 50)
-
-# Initialize rate limiter
-limiter = Limiter(key_func=get_remote_address)
 
 
 def discover_routers() -> List[APIRouter]:

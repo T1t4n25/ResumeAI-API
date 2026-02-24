@@ -1,7 +1,5 @@
 """Resumes Feature - API Routes (RESTful)"""
 from fastapi import APIRouter, Depends, Request, status, HTTPException, Response
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from typing import Dict, Any
 
 from app.features.resumes.models import (
@@ -12,12 +10,10 @@ from app.features.resumes.models import (
 )
 from app.features.resumes.service import resume_service
 from app.core.security import get_current_user
+from app.core.limiter import limiter
 
 # Create router
 router = APIRouter(prefix="/resumes", tags=["Resumes"])
-
-# Rate limiter
-limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post(
