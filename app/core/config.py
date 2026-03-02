@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     # Dynu DNS
     dynu_pass: Optional[str] = None
     
+    # Coolify Sentinel
+    sentinel_token: str = ""
+    
     # Application
     api_version: str = "5.0.0"
     environment: str = "development"
