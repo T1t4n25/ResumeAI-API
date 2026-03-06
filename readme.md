@@ -1,301 +1,132 @@
-# AI-Powered Resume Assistant API
+# Resume Flow API: Enterprise-Grade AI Career Assistant
 
-A comprehensive FastAPI-based backend service that leverages Google's Gemini AI to generate professional cover letters, project descriptions, resume summaries, and complete LaTeX-compiled resumes. This service provides a complete solution for job seekers to create compelling application materials with secure API access and user authentication.
+A comprehensive, AI-powered backend service that orchestrates the generation of professional career materials and simulates technical interviews. Built to demonstrate advanced backend architecture, secure identity management, and generative AI orchestration, this service provides a complete solution for job seekers to create compelling application materials.
 
-## 🚀 Features
+---
 
-- **Cover Letter Generation**: Creates tailored cover letters based on job descriptions and user profiles
-- **Project Description Generation**: Crafts impactful project descriptions for resumes/CVs with quantifiable achievements
-- **Professional Summary Generation**: Generates concise professional summaries with measurable results
-- **Complete Resume Compilation**: Takes all your data and generates ATS-compliant resumes in PDF/LaTeX format
-- **User Authentication System**: Complete user registration and API key management
-- **Secure Database Integration**: SQLAlchemy-based user and API key management with PostgreSQL support
-- **LaTeX Resume Compilation**: Professional resume generation using LaTeX templates
-- **Comprehensive Testing**: Full pytest test suite with detailed validation
-- **Automated Documentation**: FastAPI-generated OpenAPI documentation with security schemes
-- **Dynamic DNS**: Using Dynu service for static domain access
-- **Connection Pool Management**: Optimized database connections with automatic cleanup
+## 🌟 Business Value & Key Features
+*(A high-level overview of what this product solves)*
 
-## 🛠️ Tech Stack
+- **AI-Powered Technical Interviews**: Simulates interactive technical and behavioral interviews using Google's Gemini AI, providing immediate, actionable feedback to candidates.
+- **Automated Career Material Generation**: Crafts highly tailored cover letters, quantifiable project descriptions, and impactful professional summaries tuned to specific job descriptions.
+- **End-to-End Resume Compilation**: Takes structured candidate data and generates pixel-perfect, ATS-compliant resumes in PDF format using LaTeX.
+- **Enterprise Security Model**: Secured via **Keycloak** Identity and Access Management (IAM), utilizing OAuth2 and JWTs for robust authentication and endpoint protection.
+- **Scalable Architecture Design**: Built using a Vertical Slice Architecture, ensuring high maintainability, feature encapsulation, and dynamic routing for rapid iteration.
 
-- **Framework**: FastAPI 
-- **AI Model**: Google Gemini AI (2.0 Flash Lite)
-- **Database**: PostgreSQL with SQLAlchemy ORM
-- **Authentication**: Custom API Key management with secure hashing
-- **Resume Compilation**: LaTeX with TexSoup manipulation
-- **Testing**: pytest with comprehensive test coverage
-- **Documentation**: OpenAPI (Swagger UI)
-- **Environment Management**: python-dotenv
-- **Document Processing**: LaTeX compilation with latexmk
+---
+
+## 🛠️ Technical Overview
+*(For developers, engineers, and technical recruiters)*
+
+### Tech Stack
+- **Core Framework**: FastAPI (Python 3.8+)
+- **AI Integration**: Google Gemini AI (2.0 Flash Lite via `google-genai` SDK)
+- **Identity Provider**: Keycloak (OAuth2 / OpenID Connect)
+- **Database**: PostgreSQL with Async SQLAlchemy ORM
+- **Document Processing**: LaTeX compilation (latexmk) and TexSoup
+- **Rate Limiting**: `slowapi`
+- **Testing**: `pytest`
+
+### Architectural Highlights
+- **Vertical Slicing**: Code is organized strictly by domain features (`auth`, `cover_letters`, `interviews`, `resumes`, etc.) rather than technical concerns (like grouping all routes or all models together). This vastly improves domain cohesion.
+- **Dynamic Router Discovery**: The FastAPI application dynamically scans the `features` directory at startup to automatically discover and register `APIRouter` instances. This drastically reduces boilerplate and decouples the core application from its feature modules.
+- **Connection Pool Management**: Optimized asynchronous database connections with automatic lifespan handling to prevent connection leaks under load.
 
 ## 📋 Prerequisites
-
 - Python 3.8+
 - PostgreSQL database
+- Keycloak Server (locally or cloud-hosted)
 - LaTeX distribution (for PDF compilation)
 - Google Cloud Project with Gemini API access
-- Environment variables setup
 
-## 🔧 Installation
+## 🔧 Installation & Setup
 
-1. Clone the repository:
-
+1. **Clone the repository:**
 ```bash
-git clone https://github.com/yourusername/resume-assistant-api.git
+git clone https://github.com/T1t4n25/resume-assistant-api.git
 cd resume-assistant-api
 ```
 
-2. Create and activate a virtual environment:
-
+2. **Environment Setup:**
 ```bash
 python -m venv venv
-source venv/bin/activate  # On Windows use: .\venv\Scripts\activate
-```
-
-3. Install dependencies:
-
-```bash
+source venv/bin/activate  # On Windows: .\venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. Install LaTeX (for resume compilation):
-
+3. **Install LaTeX Dependencies:**
 ```bash
 # Ubuntu/Debian
 sudo apt-get install texlive-full latexmk
 
 # macOS
 brew install --cask mactex
-
-# Windows
-# Download and install MiKTeX or TeX Live
 ```
 
-5. Create a `.env` file in the project root:
-
+4. **Environment Variables:**
+Create a `.env` file based on the provided `.env.example`:
 ```env
 GEMINI_API_KEY=your_gemini_api_key
-DATABASE_URL=postgresql://username:password@localhost:5432/resume_db
-DYNU_PASS=your_dynu_password
+DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/resume_db
+KEYCLOAK_SERVER_URL=http://localhost:8080
+KEYCLOAK_REALM=resume-flow
+KEYCLOAK_CLIENT_ID=resume-api
 ```
-
-## 🗄️ Database Setup
-
-The application uses PostgreSQL with SQLAlchemy. The database schema includes:
-
-- **Users**: Store user credentials and information
-- **API Keys**: Manage authentication tokens linked to users
-
-Tables are automatically created on startup via SQLAlchemy metadata.
 
 ## 🚀 Running the Application
 
-1. Start the server:
-
+1. **Start the server:**
 ```bash
-./start.sh
-# Or manually:
-uvicorn main:app --host 0.0.0.0 --port 8000
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-2. Access the API documentation:
-
+2. **Access API Documentation:**
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
 
-## 🔑 Authentication System
+*(Note: Protected endpoints require a valid JWT token obtained from Keycloak. Use the "Authorize" button in Swagger UI to inject your Bearer token).*
 
-The API uses a secure authentication system with user registration and API key management:
+## 📝 Key Domains & Endpoints
 
-### 1. Register a new user:
+Explore the full interactive documentation at `/docs` once the server is running. The API encompasses the following domains:
 
-```bash
-curl -X POST "http://localhost:8000/auth/register" \
-  -H "Content-Type: application/json" \
-  -d '{"username": "your_username", "password": "your_password"}'
-```
-
-### 2. Generate additional API keys:
-
-```bash
-curl -X POST "http://localhost:8000/auth/generate-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{"username": "your_username", "password": "your_password"}'
-```
-
-### 3. View your API keys:
-
-```bash
-curl -H "X-API-Key: your_api_key" \
-  "http://localhost:8000/auth/my-api-keys"
-```
-
-### 4. Use API key in protected requests:
-
-```bash
-curl -H "X-API-Key: your_api_key" \
-  -H "Content-Type: application/json" \
-  -X POST "http://localhost:8000/generate-cover-letter" \
-  -d '{"job_post": "...", "user_name": "..."}'
-```
-
-## 📝 API Endpoints
-
-### Authentication Endpoints
-
-| Endpoint | Method | Description | Auth Required |
-|----------|---------|-------------|---------------|
-| `/auth/register` | POST | Register new user account | No |
-| `/auth/generate-api-key` | POST | Generate API key for existing user | No |
-| `/auth/my-api-keys` | GET | List user's API keys | Yes |
-
-### Content Generation Endpoints
-
-| Endpoint | Method | Description | Auth Required |
-|----------|---------|-------------|---------------|
-| `/generate-cover-letter` | POST | Generate tailored cover letter | Yes |
-| `/generate-project-description` | POST | Create impactful project descriptions | Yes |
-| `/generate-summary` | POST | Generate professional summaries | Yes |
-| `/create-resume` | POST | Compile complete resume (PDF/LaTeX) | Yes |
-
-### Utility Endpoints
-
-| Endpoint | Method | Description | Auth Required |
-|----------|---------|-------------|---------------|
-| `/health` | GET | Health check endpoint | No |
-| `/` | GET | API information and endpoints | No |
-
-## 📋 Request/Response Examples
-
-### Cover Letter Generation
-
-```json
-{
-  "job_post": "Senior Software Engineer position requiring Python, AWS, and team leadership experience...",
-  "user_name": "John Doe",
-  "user_title": "Senior Software Engineer",
-  "user_degree": "B.S. Computer Science",
-  "user_experience": "5+ years developing scalable web applications...",
-  "user_skills": "Python, AWS, Docker, React, PostgreSQL"
-}
-```
-
-### Resume Creation
-
-```json
-{
-  "information": {
-    "name": "John Doe",
-    "phone": "+1234567890",
-    "email": "john@example.com",
-    "linkedin": "linkedin.com/in/johndoe",
-    "github": "github.com/johndoe",
-    "summary": "Professional summary text..."
-  },
-  "education": [
-    {
-      "school": "University Name",
-      "degree": "B.S. Computer Science",
-      "start_date": "2018",
-      "end_date": "2022"
-    }
-  ],
-  "experience": [...],
-  "projects": [...],
-  "technical_skills": {...},
-  "soft_skills": [...],
-  "output_format": "pdf"
-}
-```
-
-## 🧪 Running Tests
-
-Execute the comprehensive test suite:
-
-```bash
-# Run all tests
-pytest tests/
-
-# Run with verbose output
-pytest tests/ -v
-
-# Run specific test categories
-pytest tests/test_cover_letter.py
-pytest tests/test_project_description.py
-pytest tests/test_summary.py
-pytest tests/test_resume_creation.py
-```
-
-Test outputs are generated in:
-- `tests/generated_cover_letters/`
-- `tests/generated_projects/`
-- `tests/generated_summaries/`
-- `tests/generated_resumes/`
+| Domain | Description | Auth Required |
+|----------|-------------|---------------|
+| **Auth** | User identity verification and Keycloak integration | No / Yes |
+| **Cover Letters** | AI-driven generation of cover letters | Yes (JWT) |
+| **Resumes** | LaTeX compilation orchestration of resumes | Yes (JWT) |
+| **Interviews** | Dynamic AI interview simulation engine | Yes (JWT) |
+| **Summaries** | Professional summary and project description generation | Yes (JWT) |
+| **Health & Sentinel**| Application health checks and telemetry | No / Admin |
 
 ## 🏗️ Project Structure
-
-```
-├── Auth_DataBase/
-│   ├── auth_database.py          # Database operations
-│   └── Auth_Database_Models/     # SQLAlchemy models
-├── generation_endpoints/         # AI generation services
-├── latex_templates/             # LaTeX resume templates
-├── tests/                       # Comprehensive test suite
-├── generated_resumes/           # Compiled resume output
-├── logs/                        # Application logs
-├── main.py                      # FastAPI application
-├── models.py                    # Pydantic request/response models
-├── api_key_manager.py           # API key management
-├── resume_creator.py            # LaTeX resume generation
-├── utility_func.py              # Helper functions
-└── requirements.txt             # Python dependencies
+```text
+app/
+├── core/                  # Core configurations (config, database, limiter)
+├── features/              # Vertical slices
+│   ├── auth/              # Keycloak integration and user identity checks
+│   ├── cover_letters/     # AI cover letter generation pipelines
+│   ├── health/            # Application health and DB checks
+│   ├── interviews/        # AI interview simulation engine
+│   ├── project_descriptions/
+│   ├── resumes/           # LaTeX compilation orchestration
+│   ├── sentinel/          # Admin/Monitoring capabilities
+│   └── summaries/         # Professional summary generation
+└── main.py                # FastAPI app entry point & dynamic router discovery
 ```
 
-## 🔒 Security Features
+## 🧪 Testing
 
-- **Secure Password Hashing**: SHA-256 password hashing
-- **API Key Authentication**: Secure token-based access control
-- **Database Connection Pooling**: Optimized and secure database connections
-- **Input Validation**: Comprehensive request validation with Pydantic
-- **Error Handling**: Secure error responses without information leakage
-- **Environment Variable Protection**: Sensitive data stored in environment variables
+Execute the comprehensive test suite using `pytest`:
+```bash
+pytest tests/ -v
+```
 
-## 🎯 AI Generation Features
+## 🔒 Security & Load Management
 
-### Cover Letter Generator
-- Tailored content based on job postings
-- Professional formatting and tone
-- Integration of user experience and skills
-- 250-300 word optimized length
-
-### Project Description Generator
-- Achievement-focused language
-- Quantifiable results emphasis
-- Technical skill highlighting
-- 30-50 word concise format
-
-### Summary Generator
-- Professional identity emphasis
-- Measurable achievements inclusion
-- 50-75 word targeted length
-- Action verb utilization
-
-### Resume Compiler
-- LaTeX-based professional formatting
-- ATS-compliant design
-- Multiple output formats (PDF/LaTeX/Both)
-- Template-based consistency
-
-## 🚀 Deployment
-
-The application includes production-ready features:
-
-- **Dynamic DNS**: Automatic IP address updates
-- **Logging**: Comprehensive application and access logging  
-- **Health Monitoring**: Connection pool status and health checks
-- **Graceful Shutdown**: Proper resource cleanup on termination
-- **CORS Support**: Cross-origin request handling
-
+- **Identity & Access Management:** Delegated entirely to Keycloak. Services do not store passwords; they authenticate with the IdP and verify JWT signatures and claims.
+- **Rate Limiting:** IP-based and user-based request throttling using `slowapi` to protect expensive AI token generation endpoints from abuse.
+- **Environment Protection:** Sensitive secrets are managed via `pydantic-settings`, supporting strict type validation, variable overrides, and preventing credential leakage.
 
 ## 📄 License & Commercial Use
 
@@ -314,26 +145,14 @@ For personal, educational, research, or non-commercial purposes, this software i
 - Integration into commercial products
 - Selling access to features or APIs
 
-#### Commercial License Terms:
-- to be negotiated with the author
-#### Get Commercial License:
 Contact **Zeyad Hemeda (@T1t4n25)** for commercial licensing:
-- **Email**: [Email](mailto:zeyad.mohammedwork@gmail.com)
+- **Email**: [zeyad.mohammedwork@gmail.com](mailto:zeyad.mohammedwork@gmail.com)
 - **GitHub**: [@T1t4n25](https://github.com/T1t4n25)
 
 **Unauthorized commercial use constitutes copyright infringement and will be prosecuted.**
 
-See [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) for full terms.
+See `COMMERCIAL_LICENSE.md` for full terms.
 
 ## 👥 Author
 
 - Zeyad Hemeda (@T1t4n25)
-
-## 🙏 Acknowledgments
-
-- Google Gemini AI team for the powerful language model
-- FastAPI team for the excellent framework
-- SQLAlchemy team for robust ORM capabilities
-- LaTeX community for document preparation system
-- Dynu for dynamic DNS services
-- pytest team for comprehensive testing framework
