@@ -7,10 +7,7 @@ from app.features.interviews.models import (
     InterviewRoomResponse,
     InterviewRoomListResponse,
     StartInterviewerRequest,
-    StartInterviewerResponse,
-    # Backward compatibility
-    StartRoomRequest,
-    StartRoomResponse
+    StartInterviewerResponse
 )
 from app.features.interviews.service import interview_service
 from app.core.security import get_current_user
@@ -157,74 +154,3 @@ async def delete_room(
         detail=f"Interview room with id {room_id} not found"
     )
 
-
-# ============================================================================
-# DEPRECATED ENDPOINTS - Backward compatibility
-# ============================================================================
-
-@router.post(
-    "/start-room",
-    status_code=status.HTTP_201_CREATED,
-    response_model=StartRoomResponse,  # Using old response model
-    summary="[DEPRECATED] Create interview room",
-    description="⚠️ DEPRECATED: Use POST /interviews/rooms instead. This endpoint will be removed in a future version.",
-    deprecated=True
-)
-@limiter.limit("3/hour")
-async def start_room_deprecated(
-    request: Request,
-    user: Dict[str, Any] = Depends(get_current_user)
-) -> StartRoomResponse:
-    """
-    [DEPRECATED] Create a room for AI interview and return room details.
-    
-    This endpoint is deprecated. Please use POST /interviews/rooms instead.
-    """
-    result = await create_room(request, None, user)
-    # Convert new response format to old format
-    return StartRoomResponse(
-        room_name=result.room_name,
-        token=result.token,
-        websocket_url=result.websocket_url,
-        message="Room created successfully. Use the token to join the room."
-    )
-
-
-@router.post(
-    "/start-interviewer",
-    status_code=status.HTTP_200_OK,
-    response_model=StartInterviewerResponse,
-    summary="[DEPRECATED] Start AI interviewer",
-    description="⚠️ DEPRECATED: Use POST /interviews/rooms/:room_id/start instead. This endpoint will be removed in a future version.",
-    deprecated=True
-)
-@limiter.limit("3/hour")
-async def start_interviewer_deprecated(
-    request: Request,
-    data: StartInterviewerRequest,
-    user: Dict[str, Any] = Depends(get_current_user)
-) -> StartInterviewerResponse:
-    """
-    [DEPRECATED] Start an AI interviewer in the specified room.
-    
-    This endpoint is deprecated. Please use POST /interviews/rooms/:room_id/start instead.
-    
-    Note: This endpoint requires room_name in the request body, but the new endpoint uses room_id in the URL path.
-    """
-    if not data.room_name:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="room_name is required in request body for this deprecated endpoint. Please use POST /interviews/rooms/:room_id/start instead, with room_id in the URL path."
-        )
-    
-    result = await interview_service.start_interviewer(
-        data.room_name,
-        data.resume,
-        data.job_description
-    )
-    
-    return StartInterviewerResponse(
-        message=result.message,
-        room_id=data.room_name,
-        room_name=result.room_name
-    )

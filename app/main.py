@@ -172,10 +172,9 @@ app = FastAPI(
     AI-powered generator for:
     - Professional Cover Letters
     - Summary and Project Descriptions for CV
-    - Create Resume using LaTeX
     - AI-Powered Interview System
     
-    Built with FastAPI, Google's Gemini AI, Keycloak Authentication, and LaTeX.
+    Built with FastAPI, Google's Gemini AI, and Keycloak Authentication.
     
     ## Authentication
     Protected endpoints require a Keycloak JWT token in the `Authorization: Bearer <token>` header.

@@ -49,7 +49,6 @@ class StartInterviewerRequest(BaseModel):
     
     resume: str = Field(..., description="Candidate's resume text")
     job_description: str = Field(..., description="Job description for the interview")
-    room_name: str | None = Field(None, description="[DEPRECATED] Room name - use room_id in URL path instead")
 
 
 class StartInterviewerResponse(BaseModel):
@@ -67,14 +66,3 @@ class InterviewRoomListResponse(BaseModel):
     offset: int = 0
 
 
-# Backward compatibility - need separate class for old response format
-class StartRoomResponse(BaseModel):
-    """[DEPRECATED] Old response model for room creation"""
-    room_name: str = Field(..., description="Name of the created room")
-    token: str = Field(..., description="Access token for the room")
-    websocket_url: str = Field(..., description="WebSocket URL for LiveKit connection")
-    message: str = Field(..., description="Success message")
-
-
-# Backward compatibility alias
-StartRoomRequest = InterviewRoomCreate

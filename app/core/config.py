@@ -40,9 +40,6 @@ class Settings(BaseSettings):
     environment: str = "development"
     api_port: int = 8000
     
-    # Legacy security (not used - Keycloak handles all authentication)
-    secret_key: Optional[str] = None
-    algorithm: str = "HS256"
     
     # Logging
     log_level: str = "INFO"

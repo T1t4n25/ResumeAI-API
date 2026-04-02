@@ -57,15 +57,6 @@ async def root(request: Request):
                 "GET /summaries": "List all summaries",
                 "GET /summaries/:id": "Get specific summary"
             },
-            "resumes": {
-                "POST /resumes": "Create a new resume",
-                "GET /resumes": "List all resumes",
-                "GET /resumes/:id": "Get specific resume",
-                "GET /resumes/:id/pdf": "Download resume PDF",
-                "GET /resumes/:id/latex": "Get resume LaTeX source",
-                "PATCH /resumes/:id": "Update resume",
-                "DELETE /resumes/:id": "Delete resume"
-            },
             "interviews": {
                 "POST /interviews/rooms": "Create interview room",
                 "GET /interviews/rooms": "List all interview rooms",
@@ -81,14 +72,6 @@ async def root(request: Request):
                 "GET /docs": "Interactive API documentation (Swagger UI)",
                 "GET /redoc": "Alternative API documentation (ReDoc)",
                 "GET /openapi.json": "OpenAPI schema"
-            },
-            "deprecated": {
-                "POST /cover-letters/generate": "[DEPRECATED] Use POST /cover-letters",
-                "POST /project-descriptions/generate": "[DEPRECATED] Use POST /project-descriptions",
-                "POST /summaries/generate": "[DEPRECATED] Use POST /summaries",
-                "POST /resumes/create": "[DEPRECATED] Use POST /resumes",
-                "POST /interviews/start-room": "[DEPRECATED] Use POST /interviews/rooms",
-                "GET /auth/token-info": "[DEPRECATED] Use GET /auth/tokens/info"
             }
         },
         "architecture": {
