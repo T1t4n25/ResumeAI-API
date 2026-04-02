@@ -1,108 +1,79 @@
-# REST API Endpoint Refactoring Summary
+# REST API Endpoint Reference
 
-## ✅ Completed Refactoring
+## Current Endpoints (RESTful)
 
-All API endpoints have been refactored to follow REST conventions and best practices.
+All endpoints follow REST conventions with proper HTTP status codes and resource-based URIs.
 
-## Endpoint Changes
+### Authentication
 
-### 1. Cover Letters ✅
+| Method | Endpoint | Status | Description |
+|---|---|---|---|
+| `GET` | `/auth/me` | 200 | Get current user info from Keycloak token |
+| `POST` | `/auth/refresh` | 200 | Refresh access token |
+| `GET` | `/auth/tokens/info` | 200 | Decode and inspect JWT claims |
 
-**Before:**
-- `POST /cover-letters/generate` ❌
+### Cover Letters
 
-**After:**
-- `POST /cover-letters` ✅ (201 Created)
-- `GET /cover-letters` ✅ (List all)
-- `GET /cover-letters/{id}` ✅ (Get specific)
-- `DELETE /cover-letters/{id}` ✅ (204 No Content)
+| Method | Endpoint | Status | Description |
+|---|---|---|---|
+| `POST` | `/cover-letters` | 201 | Generate a new cover letter |
+| `GET` | `/cover-letters` | 200 | List all cover letters (paginated) |
+| `GET` | `/cover-letters/{id}` | 200 | Get specific cover letter |
+| `DELETE` | `/cover-letters/{id}` | 204 | Delete cover letter |
 
-**Deprecated (backward compatible):**
-- `POST /cover-letters/generate` ⚠️ (marked as deprecated)
+### Project Descriptions
 
-### 2. Project Descriptions ✅
+| Method | Endpoint | Status | Description |
+|---|---|---|---|
+| `POST` | `/project-descriptions` | 201 | Generate project description |
+| `GET` | `/project-descriptions` | 200 | List project descriptions (paginated) |
+| `GET` | `/project-descriptions/{id}` | 200 | Get specific description |
 
-**Before:**
-- `POST /project-descriptions/generate` ❌
+### Summaries
 
-**After:**
-- `POST /project-descriptions` ✅ (201 Created)
-- `GET /project-descriptions` ✅ (List all)
-- `GET /project-descriptions/{id}` ✅ (Get specific)
+| Method | Endpoint | Status | Description |
+|---|---|---|---|
+| `POST` | `/summaries` | 201 | Generate professional summary |
+| `GET` | `/summaries` | 200 | List summaries (paginated) |
+| `GET` | `/summaries/{id}` | 200 | Get specific summary |
 
-**Deprecated (backward compatible):**
-- `POST /project-descriptions/generate` ⚠️ (marked as deprecated)
+### Resumes
 
-### 3. Summaries ✅
+| Method | Endpoint | Status | Description |
+|---|---|---|---|
+| `POST` | `/resumes` | 201 | Compile LaTeX resume |
+| `GET` | `/resumes` | 200 | List resumes (paginated) |
+| `GET` | `/resumes/{id}` | 200 | Get specific resume |
+| `PATCH` | `/resumes/{id}` | 200 | Update resume metadata |
+| `DELETE` | `/resumes/{id}` | 204 | Delete resume |
 
-**Before:**
-- `POST /summaries/generate` ❌
+### Interviews
 
-**After:**
-- `POST /summaries` ✅ (201 Created)
-- `GET /summaries` ✅ (List all)
-- `GET /summaries/{id}` ✅ (Get specific)
+| Method | Endpoint | Status | Description |
+|---|---|---|---|
+| `POST` | `/interviews/rooms` | 201 | Create LiveKit interview room |
+| `GET` | `/interviews/rooms` | 200 | List interview rooms (paginated) |
+| `GET` | `/interviews/rooms/{id}` | 200 | Get room details |
+| `POST` | `/interviews/rooms/{id}/start` | 200 | Start AI interviewer agent |
+| `DELETE` | `/interviews/rooms/{id}` | 204 | End interview session |
 
-**Deprecated (backward compatible):**
-- `POST /summaries/generate` ⚠️ (marked as deprecated)
+### Infrastructure
 
-### 4. Resumes ✅
+| Method | Endpoint | Status | Description |
+|---|---|---|---|
+| `GET` | `/` | 200 | API information and endpoint directory |
+| `GET` | `/health` | 200 | Health check |
+| `POST` | `/api/v1/sentinel/push` | 200 | Receive Coolify Sentinel metrics |
 
-**Before:**
-- `POST /resumes/create` ❌
+## Response Conventions
 
-**After:**
-- `POST /resumes` ✅ (201 Created)
-- `GET /resumes` ✅ (List all)
-- `GET /resumes/{id}` ✅ (Get specific)
-- `GET /resumes/{id}/pdf` ✅ (Download PDF)
-- `GET /resumes/{id}/latex` ✅ (Get LaTeX source)
-- `PATCH /resumes/{id}` ✅ (Update)
-- `DELETE /resumes/{id}` ✅ (204 No Content)
+### Create Responses (POST → 201)
+All creation endpoints return the generated resource with:
+- `id`: UUID identifier
+- `created_at` / `updated_at`: ISO 8601 timestamps
 
-**Deprecated (backward compatible):**
-- `POST /resumes/create` ⚠️ (marked as deprecated)
-
-### 5. Interviews ✅
-
-**Before:**
-- `POST /interviews/start-room` ❌
-- `POST /interviews/start-interviewer` ❌
-
-**After:**
-- `POST /interviews/rooms` ✅ (201 Created)
-- `GET /interviews/rooms` ✅ (List all)
-- `GET /interviews/rooms/{room_id}` ✅ (Get specific)
-- `POST /interviews/rooms/{room_id}/start` ✅ (Start interviewer)
-- `DELETE /interviews/rooms/{room_id}` ✅ (204 No Content)
-
-**Deprecated (backward compatible):**
-- `POST /interviews/start-room` ⚠️ (marked as deprecated)
-- `POST /interviews/start-interviewer` ⚠️ (marked as deprecated, requires room_name in body)
-
-### 6. Authentication ✅
-
-**Before:**
-- `GET /auth/token-info` ❌
-
-**After:**
-- `GET /auth/me` ✅ (Get current user - unchanged)
-- `POST /auth/refresh` ✅ (Refresh token - unchanged)
-- `GET /auth/tokens/info` ✅ (Get token info - improved path)
-
-**Deprecated (backward compatible):**
-- `GET /auth/token-info` ⚠️ (marked as deprecated)
-
-## Response Model Updates
-
-All response models now include:
-- ✅ `id`: Unique identifier (UUID string)
-- ✅ `created_at`: Creation timestamp (datetime)
-- ✅ `updated_at`: Last update timestamp (datetime)
-
-### List Responses
-
-All list endpoints now return paginated responses:
+### List Responses (GET → 200)
+All list endpoints return paginated responses:
 ```json
 {
   "data": [...],
@@ -112,85 +83,30 @@ All list endpoints now return paginated responses:
 }
 ```
 
-## Status Codes
+### Standard Status Codes
+| Code | Meaning |
+|---|---|
+| `200 OK` | Successful GET, PATCH |
+| `201 Created` | Successful POST (new resource) |
+| `204 No Content` | Successful DELETE |
+| `400 Bad Request` | Invalid input |
+| `401 Unauthorized` | Missing/invalid auth |
+| `403 Forbidden` | Insufficient permissions |
+| `404 Not Found` | Resource doesn't exist |
+| `429 Too Many Requests` | Rate limit exceeded |
+| `500 Internal Server Error` | Server error |
 
-Following REST conventions:
-- ✅ `200 OK`: Successful GET, PATCH
-- ✅ `201 Created`: Successful POST (new resource)
-- ✅ `204 No Content`: Successful DELETE
-- ✅ `400 Bad Request`: Invalid input
-- ✅ `401 Unauthorized`: Missing/invalid auth
-- ✅ `403 Forbidden`: Insufficient permissions
-- ✅ `404 Not Found`: Resource doesn't exist
-- ✅ `429 Too Many Requests`: Rate limit exceeded
-- ✅ `500 Internal Server Error`: Server error
+## Implementation Notes
 
-## Backward Compatibility
+### Fully Functional Endpoints
+- All `POST` creation endpoints (cover letters, summaries, project descriptions, resumes, interview rooms/start)
+- All auth endpoints
+- Health and sentinel endpoints
 
-All old endpoints are maintained with:
-- ✅ `deprecated=True` flag in FastAPI
-- ✅ Deprecation warnings in documentation
-- ✅ Proper error messages guiding users to new endpoints
+### Stub Endpoints (Awaiting Persistence Layer)
+- `GET /{resource}/{id}` — Returns 404 (needs database lookup)
+- `GET /{resource}` — Returns empty list (needs database query)
+- `DELETE /{resource}/{id}` — Returns 404 (needs database deletion)
+- `PATCH /resumes/{id}` — Returns 404 (needs database update)
 
-## Implementation Status
-
-### ✅ Completed
-- All route definitions updated to REST conventions
-- Response models updated with IDs and timestamps
-- Proper HTTP status codes
-- Backward compatibility maintained
-- Deprecation warnings added
-
-### ⚠️ Pending (Requires Database Persistence)
-- `GET /cover-letters/{id}` - Returns 404 (needs persistence)
-- `GET /cover-letters` - Returns empty list (needs persistence)
-- `DELETE /cover-letters/{id}` - Returns 404 (needs persistence)
-- `GET /project-descriptions/{id}` - Returns 404 (needs persistence)
-- `GET /project-descriptions` - Returns empty list (needs persistence)
-- `GET /summaries/{id}` - Returns 404 (needs persistence)
-- `GET /summaries` - Returns empty list (needs persistence)
-- `GET /resumes/{id}` - Returns 404 (needs persistence)
-- `GET /resumes` - Returns empty list (needs persistence)
-- `GET /resumes/{id}/pdf` - Returns 404 (needs persistence + file serving)
-- `GET /resumes/{id}/latex` - Returns 404 (needs persistence)
-- `PATCH /resumes/{id}` - Returns 404 (needs persistence + update logic)
-- `DELETE /resumes/{id}` - Returns 404 (needs persistence)
-- `GET /interviews/rooms/{room_id}` - Returns 404 (needs persistence)
-- `GET /interviews/rooms` - Returns empty list (needs persistence)
-- `DELETE /interviews/rooms/{room_id}` - Returns 404 (needs persistence)
-
-## Next Steps
-
-1. **Implement Database Persistence**
-   - Create database models for cover letters, project descriptions, summaries, resumes, interview rooms
-   - Implement CRUD operations in services
-   - Add file storage for PDF files
-
-2. **Add File Serving**
-   - Implement proper file serving for PDF downloads
-   - Store files in cloud storage (S3, etc.) or filesystem
-   - Generate secure URLs for file access
-
-3. **Add Pagination**
-   - Implement proper pagination with database queries
-   - Add sorting and filtering options
-
-4. **Add Validation**
-   - Input validation for IDs (UUID format)
-   - Resource ownership validation
-   - Permission checks
-
-5. **Update Documentation**
-   - Mark old endpoints clearly as deprecated
-   - Update API documentation examples
-   - Create migration guide for API consumers
-
-## Testing
-
-All endpoints should be tested:
-- ✅ New REST endpoints work correctly
-- ✅ Deprecated endpoints still work (backward compatibility)
-- ✅ Proper status codes returned
-- ✅ Response models match expected format
-- ⚠️ GET/DELETE endpoints return proper responses once persistence is implemented
-
+These stubs have correct request/response models and status codes — they just need the persistence layer wired in.

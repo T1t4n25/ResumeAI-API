@@ -6,7 +6,6 @@ from typing import Dict, Any
 
 from app.features.interviews.models import (
     InterviewRoomResponse,
-    StartRoomResponse,  # Backward compatibility
     StartInterviewerResponse
 )
 from app.features.interviews.livekit_manager import LiveKitManager

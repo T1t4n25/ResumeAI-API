@@ -8,64 +8,80 @@ This is a FastAPI-based backend service that leverages Google's Gemini AI to gen
 ### Core Principle
 Organize code by **feature/domain** rather than by technical layer. Each feature slice should be self-contained with its own models, services, routes, and dependencies.
 
-### Directory Structure (Target Architecture)
+### Directory Structure (Current Architecture)
 ```
 app/
-├── core/                    # Shared infrastructure
-│   ├── config.py           # Application configuration
-│   ├── database.py         # Database connection & session management
-│   ├── security.py         # Security utilities (Keycloak integration)
-│   └── dependencies.py     # Shared FastAPI dependencies
+├── core/                          # Shared infrastructure
+│   ├── auth/                     # Keycloak auth sub-package
+│   │   ├── keycloak_config.py    # Connection settings
+│   │   ├── keycloak_jwt_handler.py  # RS256 JWT verification (JWKS)
+│   │   ├── keycloak_admin.py     # Admin API wrapper
+│   │   └── auth_exceptions.py    # Auth error codes
+│   ├── config.py                 # Pydantic Settings configuration
+│   ├── database.py               # Async engine & session management
+│   ├── security.py               # FastAPI auth dependencies
+│   ├── dependencies.py           # Shared FastAPI dependencies
+│   └── limiter.py                # Rate limiter instance
 │
-├── features/               # Feature slices (vertical architecture)
-│   ├── auth/              # Authentication feature
+├── features/                      # Feature slices (vertical architecture)
+│   ├── auth/                     # Keycloak identity verification
 │   │   ├── __init__.py
-│   │   ├── models.py      # Pydantic models for auth
-│   │   ├── routes.py      # Auth endpoints
-│   │   ├── service.py     # Auth business logic
-│   │   └── dependencies.py # Auth-specific dependencies
+│   │   ├── models.py             # Pydantic models for auth
+│   │   ├── routes.py             # Auth endpoints
+│   │   ├── service.py            # Auth business logic
+│   │   └── dependencies.py       # Auth-specific dependencies
 │   │
-│   ├── cover_letters/     # Cover letter generation feature
+│   ├── cover_letters/            # Cover letter generation feature
 │   │   ├── __init__.py
-│   │   ├── models.py      # Request/response models
-│   │   ├── routes.py      # Cover letter endpoints
-│   │   ├── service.py     # Generation logic
-│   │   └── dependencies.py
+│   │   ├── models.py             # Request/response models
+│   │   ├── routes.py             # Cover letter endpoints
+│   │   ├── service.py            # Orchestration logic
+│   │   └── generator.py          # Gemini AI generation
 │   │
-│   ├── project_descriptions/  # Project description feature
-│   │   ├── __init__.py
-│   │   ├── models.py
-│   │   ├── routes.py
-│   │   ├── service.py
-│   │   └── dependencies.py
-│   │
-│   ├── summaries/         # Summary generation feature
+│   ├── project_descriptions/     # Project description feature
 │   │   ├── __init__.py
 │   │   ├── models.py
 │   │   ├── routes.py
 │   │   ├── service.py
-│   │   └── dependencies.py
+│   │   └── generator.py
 │   │
-│   ├── resumes/           # Resume creation feature
+│   ├── summaries/                # Summary generation feature
 │   │   ├── __init__.py
 │   │   ├── models.py
 │   │   ├── routes.py
-│   │   ├── service.py     # LaTeX generation logic
-│   │   └── dependencies.py
+│   │   ├── service.py
+│   │   └── generator.py
 │   │
-│   └── interviews/        # AI interview feature
+│   ├── resumes/                  # Resume creation feature
+│   │   ├── __init__.py
+│   │   ├── models.py
+│   │   ├── routes.py
+│   │   ├── service.py
+│   │   └── generator.py          # LaTeX/TexSoup generation
+│   │
+│   ├── interviews/               # AI interview feature
+│   │   ├── __init__.py
+│   │   ├── models.py
+│   │   ├── routes.py
+│   │   ├── service.py
+│   │   ├── livekit_manager.py    # LiveKit room management
+│   │   └── agent_manager.py      # AI agent lifecycle
+│   │
+│   ├── health/                   # Health checks & API info
+│   │   ├── __init__.py
+│   │   └── routes.py
+│   │
+│   └── sentinel/                 # Coolify Sentinel metrics
 │       ├── __init__.py
 │       ├── models.py
-│       ├── routes.py
-│       ├── service.py     # LiveKit & Agent management
-│       └── dependencies.py
+│       └── routes.py
 │
-├── shared/                # Shared domain models & utilities
-│   ├── models/           # SQLAlchemy models (Users, API_Keys)
-│   ├── utils/            # Utility functions
-│   └── exceptions.py     # Custom exceptions
+├── shared/                        # Shared domain models & utilities
+│   ├── models/                   # SQLAlchemy models (legacy schema compat)
+│   ├── utils/text_utils.py       # Token reduction utilities
+│   └── exceptions.py             # Custom exception hierarchy
 │
-└── main.py               # FastAPI app initialization
+└── main.py                        # FastAPI app init & dynamic router discovery
 ```
 
 ### Vertical Slice Rules
@@ -74,12 +90,9 @@ app/
 3. **Feature-specific dependencies**: Each feature can have its own dependency injection
 4. **Self-contained testing**: Each feature should be testable in isolation
 
-## Authentication: Keycloak Integration
+## Authentication: Keycloak (Active)
 
-### Migration Strategy
-- **Current**: Custom API key authentication with SHA-256 password hashing
-- **Target**: Keycloak OAuth2/OIDC with JWT tokens
-- **Transition**: Support both during migration period
+All authentication is handled by Keycloak OAuth2/OIDC with JWT tokens. Legacy API key authentication has been fully removed.
 
 ### Keycloak Implementation Guidelines
 
@@ -411,25 +424,9 @@ async def generate_cover_letter(
 - Test happy paths and error cases
 - Keep tests fast and isolated
 
-## Migration Notes
+## Migration Status
 
-### From Current to Vertical Slicing
-1. **Phase 1**: Create `features/` directory structure
-2. **Phase 2**: Move existing code into feature slices
-3. **Phase 3**: Extract shared code to `core/` and `shared/`
-4. **Phase 4**: Refactor dependencies to use FastAPI DI
-5. **Phase 5**: Add Keycloak integration alongside existing auth
-6. **Phase 6**: Migrate endpoints to use Keycloak
-7. **Phase 7**: Remove old API key auth (if desired)
-
-### Keycloak Migration Steps
-1. Set up Keycloak instance (Docker or cloud)
-2. Create realm and client
-3. Implement `KeycloakAuth` in `core/security.py`
-4. Add `get_current_user` dependency
-5. Update feature routes to use new dependency
-6. Test with both auth methods during transition
-7. Deprecate API key auth gradually
+The vertical slicing migration and Keycloak integration are **complete**. All features have been migrated to self-contained slices under `features/`, Keycloak is the sole authentication provider, and all deprecated API endpoints have been removed.
 
 ## Environment Variables
 

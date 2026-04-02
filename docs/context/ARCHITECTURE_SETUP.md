@@ -128,25 +128,34 @@ curl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
 
 ```
 app/
-├── core/                    # Shared infrastructure
-│   ├── config.py           # Pydantic Settings configuration
-│   ├── database.py         # Async SQLAlchemy setup
-│   ├── security.py         # Keycloak authentication
-│   └── dependencies.py     # Shared FastAPI dependencies
+├── core/                          # Shared infrastructure
+│   ├── auth/                     # Keycloak auth sub-package
+│   │   ├── keycloak_config.py    # Connection settings & URL builders
+│   │   ├── keycloak_jwt_handler.py  # RS256 JWT verification (JWKS)
+│   │   ├── keycloak_admin.py     # Admin API wrapper
+│   │   └── auth_exceptions.py    # Auth error codes
+│   ├── config.py                 # Pydantic Settings configuration
+│   ├── database.py               # Async SQLAlchemy setup
+│   ├── security.py               # FastAPI auth dependencies
+│   ├── dependencies.py           # Shared FastAPI dependencies
+│   └── limiter.py                # Rate limiter instance
 │
-├── features/               # Feature slices (vertical architecture)
-│   └── auth/              # Authentication feature
-│       ├── models.py      # Pydantic request/response models
-│       ├── routes.py      # API endpoints
-│       ├── service.py     # Business logic
-│       └── dependencies.py # Feature-specific dependencies
+├── features/                      # Feature slices (vertical architecture)
+│   ├── auth/                     # Keycloak identity verification
+│   ├── cover_letters/            # AI cover letter generation
+│   ├── project_descriptions/     # AI project description generation
+│   ├── summaries/                # AI professional summary generation
+│   ├── resumes/                  # LaTeX resume compilation
+│   ├── interviews/               # LiveKit AI interview rooms & agents
+│   ├── health/                   # Health checks & API info
+│   └── sentinel/                 # Coolify Sentinel metrics receiver
 │
-├── shared/                # Shared domain models & utilities
-│   ├── models/           # SQLAlchemy models
-│   ├── utils/            # Utility functions
-│   └── exceptions.py     # Custom exceptions
+├── shared/                        # Shared domain models & utilities
+│   ├── models/                   # SQLAlchemy models (legacy schema compat)
+│   ├── utils/text_utils.py       # Token reduction utilities
+│   └── exceptions.py             # Custom exception hierarchy
 │
-└── main.py               # FastAPI app initialization
+└── main.py                        # FastAPI app init & dynamic router discovery
 ```
 
 ### Vertical Slicing Principles
@@ -232,20 +241,22 @@ During migration:
 - Check PostgreSQL is running: `docker-compose ps postgres`
 - Verify network connectivity between services
 
-## Next Steps
+## Status
 
-1. Migrate remaining features to vertical slices:
-   - `cover_letters/`
-   - `project_descriptions/`
-   - `summaries/`
-   - `resumes/`
-   - `interviews/`
+All feature slices have been migrated to the vertical architecture:
+- ✅ `auth/` — Keycloak identity
+- ✅ `cover_letters/` — AI generation
+- ✅ `project_descriptions/` — AI generation
+- ✅ `summaries/` — AI generation
+- ✅ `resumes/` — LaTeX pipeline
+- ✅ `interviews/` — LiveKit agents
+- ✅ `health/` — Health checks
+- ✅ `sentinel/` — Coolify metrics
 
+### Remaining Work
+1. Implement database persistence for GET/DELETE/PATCH stubs
 2. Add comprehensive tests for each feature
-
 3. Set up CI/CD pipeline
-
 4. Configure production Keycloak instance
-
-5. Set up monitoring and logging
+5. Set up monitoring and logging aggregation
 
