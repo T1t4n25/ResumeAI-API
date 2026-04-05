@@ -13,7 +13,7 @@ class ProjectDescriptionService:
     def __init__(self):
         self.generator = ProjectDescriptionGenerator()
     
-    def generate_description(self, request: ProjectDescriptionRequest) -> ProjectDescriptionResponse:
+    def generate_description(self, request: ProjectDescriptionRequest) -> str:
         """
         Generate a professional project description using AI.
         
@@ -25,7 +25,7 @@ class ProjectDescriptionService:
         """
         logger.info(f"Generating project description for {request.project_name}")
         description = self.generator.generate_description(request)
-        return ProjectDescriptionResponse(project_description=description)
+        return description
 
 
 # Global service instance

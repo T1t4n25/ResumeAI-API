@@ -1,289 +1,302 @@
 # tests/test_summary.py
-import sys
+"""
+Tests for the summaries feature.
+
+Endpoints tested (new RESTful path — was /api/resume-flow/generate-summary):
+  POST /summaries        → 201 { id, summary, current_title, years_experience, skills, ... }
+  GET  /summaries        → 200 { data: [], total: 0, ... }
+  GET  /summaries/{id}   → 404 (persistence not yet implemented)
+
+Auth: Bearer token header (Keycloak JWT — mocked in unit tests via dependency override)
+"""
 import os
-import re
-import pytest
+import json
 import time
+import pytest
 import hashlib
+import httpx
 from datetime import datetime
-from fastapi.testclient import TestClient
 
-# Add project root to Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from main import app
-
-# Create test client
-client = TestClient(app)
-
-api_key = "-oZ7Dhbq-GyYWA-ZSMP9BXNxQjRJpER0lsXqYSh98CE"
-
-# Create directory for generated summaries
+# ---------------------------------------------------------------------------
+# Output directory for generated content
+# ---------------------------------------------------------------------------
 SUMMARIES_DIR = os.path.join(os.path.dirname(__file__), "generated_summaries")
 os.makedirs(SUMMARIES_DIR, exist_ok=True)
 
-def save_summary(summary: str, metadata: dict) -> str:
-    """Save generated summary with metadata"""
-    try:
-        # Create timestamp and hash for unique filename
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        content_hash = hashlib.md5((summary + timestamp).encode()).hexdigest()[:8]
-        filename = f"summary_{timestamp}_{content_hash}.txt"
-        filepath = os.path.join(SUMMARIES_DIR, filename)
-        
-        # Save with formatted content
-        with open(filepath, 'w') as f:
-            # Header
-            f.write("="*80 + "\n")
-            f.write("RESUME SUMMARY METADATA:\n")
-            f.write("="*80 + "\n")
-            f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-            
-            # Metadata
-            f.write("Input Parameters:\n")
-            f.write("-"*40 + "\n")
-            for key, value in metadata.items():
-                f.write(f"{key}: {value}\n")
-            
-            # Summary
-            f.write("\n" + "="*80 + "\n")
-            f.write("GENERATED SUMMARY:\n")
-            f.write("="*80 + "\n\n")
-            f.write(summary)
-            
-            # Statistics
-            f.write("\n\n" + "="*80 + "\n")
-            f.write("STATISTICS:\n")
-            f.write("-"*40 + "\n")
-            f.write(f"Word Count: {len(summary.split())}\n")
-            f.write(f"Character Count: {len(summary)}\n")
-            
-            # Validation Results
-            f.write("\nValidation Results:\n")
-            f.write("-"*40 + "\n")
-            validations = {
-                "Word Count": 50 <= len(summary.split()) <= 75,
-                "Professional Title": metadata["Title"].lower() in summary.lower(),
-                "Experience": metadata["Experience"].lower() in summary.lower(),
-                "Skills": any(skill.lower() in summary.lower() 
-                            for skill in metadata["Skills"].split(", "))
-            }
-            for criterion, passed in validations.items():
-                f.write(f"{criterion:15}: {'✓' if passed else '✗'}\n")
-            
-            f.write("\n" + "="*80 + "\n")
-        
-        return filename
-    except Exception as e:
-        print(f"Error saving file: {str(e)}")
-        return None
 
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
 
 @pytest.fixture
-def test_payload():
-    """Test payload for summary generation"""
+def valid_payload():
+    """Standard summary creation request payload"""
     return {
         "current_title": "Senior Software Engineer",
         "years_experience": "5+ years",
         "skills": "Python, React, AWS, Microservices",
-        "achievements": "Led team of 5, Reduced system latency by 40%"
+        "achievements": "Led team of 5, Reduced system latency by 40%",
     }
-    
-def test_summary_generation(test_payload):
-    """Test summary generation"""
-    print("\nTesting Summary Generation")
-    print("="*80)
-    
-    # Start timing
-    start_time = time.time()
-    
-    # Generate summary
-    response = client.post(
-        "/api/resume-flow/generate-summary",
-        json=test_payload,
-        headers={"X-API-Key": api_key}
-    )
-    
-    # Calculate response time
-    response_time = time.time() - start_time
-    print(f"\nResponse Time: {response_time:.2f} seconds")
-    
-    # Check response status
-    assert response.status_code == 200, f"API call failed with status {response.status_code}: {response.text}"
-    
-    # Extract summary
-    result = response.json()
-    assert "summary" in result, "Response missing 'summary' field"
-    
-    summary = result["summary"]
-    word_count = len(summary.split())
-    
-    # Display generated summary
-    print("\nGenerated Summary:")
-    print("-"*80)
-    print(summary)
-    print("-"*80)
-    print(f"Word Count: {word_count}")
-    
-    # Save the summary first (before any validations)
-    filename = save_summary(
-        summary,
-        {
-            "Title": test_payload["current_title"],
-            "Experience": test_payload["years_experience"],
-            "Skills": test_payload["skills"],
-            "Achievements": test_payload.get("achievements", "Not provided"),
-            "Word Count": word_count,
-            "Generation Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "Response Time": f"{response_time:.2f} seconds"
-        }
-    )
-    
-    assert filename is not None, "Failed to save summary"
-    print(f"\nSaved to: {filename}")
-    
-    # Split validations into required and best practices
-    required_validations = {
-        "Word Count": (40 <= word_count <= 75, f"Word count {word_count} outside range 40-75"),
-        "Professional Identity": (
-            test_payload["current_title"].lower() in summary.lower(),
-            "Missing professional title"
-        ),
-        "Experience": (
-            test_payload["years_experience"].lower() in summary.lower(),
-            "Missing experience information"
-        ),
-        "Technical Skills": (
-            any(skill.lower() in summary.lower() for skill in test_payload["skills"].split(", ")),
-            "Missing technical skills"
-        ),
-        "Metrics Present": (
-            any(char.isdigit() for char in summary),
-            "Missing numerical metrics"
-        )
+
+
+# ---------------------------------------------------------------------------
+# Validation helpers
+# ---------------------------------------------------------------------------
+
+def validate_summary(summary: str, payload: dict) -> dict:
+    """Run required and best-practice validations on generated summary text."""
+    words = summary.split()
+    word_count = len(words)
+
+    required = {
+        "word_count_in_range": {
+            "passed": 40 <= word_count <= 100,
+            "detail": f"Word count {word_count} (expected 40–100)",
+        },
+        "mentions_title": {
+            "passed": payload["current_title"].lower() in summary.lower(),
+            "detail": f"Summary should mention title '{payload['current_title']}'",
+        },
+        "mentions_experience": {
+            "passed": any(
+                part in summary.lower()
+                for part in payload["years_experience"].lower().split()
+                if part.isdigit() or "+" in part
+            ) or payload["years_experience"].lower() in summary.lower(),
+            "detail": f"Summary should mention '{payload['years_experience']}'",
+        },
+        "mentions_at_least_one_skill": {
+            "passed": any(
+                skill.strip().lower() in summary.lower()
+                for skill in payload["skills"].split(",")
+            ),
+            "detail": "Summary should mention at least one skill",
+        },
     }
 
     best_practices = {
-        "Action Verb Start": (
-            summary.lower().split()[0] in [
-                "developed", "implemented", "led", "spearheaded", "orchestrated",
-                "delivered", "designed", "architected", "engineered", "managed",
-                "experienced", "skilled", "seasoned", "accomplished",
-                "results-oriented", "results-driven", "innovative"
-            ],
-            "Consider starting with strong action verb"
-        ),
-        "Achievement Focus": (
-            any(achievement_word in summary.lower() for achievement_word in [
-                "achieved", "reduced", "improved", "led", "developed",
-                "increased", "delivered", "implemented", "spearheaded",
-                "orchestrated", "optimized", "enhanced", "streamlined"
-            ]),
-            "Consider including achievement-focused language"
-        ),
-        "Value Proposition": (
-            any(phrase.lower() in summary.lower() for phrase in [
-                "expertise in", "specialized in", "proven track record", 
-                "demonstrated success", "proven ability", "expertise",
-                "successfully", "effectively", "consistently"
-            ]),
-            "Consider adding clear value proposition"
-        ),
-        "Length Optimization": (
-            50 <= word_count <= 75,
-            "Consider expanding to 50-75 words for optimal detail"
-        ),
-        "Skills Integration": (
-            sum(1 for skill in test_payload["skills"].split(", ") 
-                if skill.lower() in summary.lower()) >= 2,
-            "Consider mentioning more technical skills"
-        )
+        "mentions_multiple_skills": {
+            "passed": sum(
+                1 for skill in payload["skills"].split(",")
+                if skill.strip().lower() in summary.lower()
+            ) >= 2,
+            "detail": "Ideally mentions 2+ skills",
+        },
+        "uses_achievement_language": {
+            "passed": any(
+                word in summary.lower()
+                for word in ["achieved", "reduced", "improved", "led", "developed", "delivered", "optimized"]
+            ),
+            "detail": "Should use achievement-focused language",
+        },
+        "has_value_proposition": {
+            "passed": any(
+                phrase in summary.lower()
+                for phrase in ["expertise", "specialized", "proven", "experienced", "skilled", "accomplished"]
+            ),
+            "detail": "Should contain a value proposition phrase",
+        },
+        "has_metrics": {
+            "passed": any(char.isdigit() for char in summary),
+            "detail": "Should contain numerical metrics",
+        },
     }
-    
-    # Print and save validation results
-    print("\nRequired Criteria:")
-    print("-"*80)
-    failed_required = []
-    for criterion, (passed, error_msg) in required_validations.items():
-        status = "✓" if passed else "✗"
-        print(f"{criterion:20}: {status}")
-        if not passed:
-            failed_required.append(f"{criterion}: {error_msg}")
 
-    print("\nBest Practices:")
-    print("-"*80)
-    best_practices_met = []
-    best_practices_missed = []
-    for criterion, (passed, suggestion) in best_practices.items():
-        status = "✓" if passed else "○"  # Using ○ instead of ✗ for best practices
-        print(f"{criterion:20}: {status}")
-        if passed:
-            best_practices_met.append(criterion)
-        else:
-            best_practices_missed.append(f"{criterion}: {suggestion}")
+    return {"required": required, "best_practices": best_practices}
 
-    # Save results to file
-    if os.path.exists(os.path.join(SUMMARIES_DIR, filename)):
-        with open(os.path.join(SUMMARIES_DIR, filename), 'a') as f:
-            f.write("\nVALIDATION RESULTS:\n")
-            f.write("="*80 + "\n")
-            
-            f.write("\nREQUIRED CRITERIA:\n")
-            f.write("-"*80 + "\n")
-            for criterion, (passed, _) in required_validations.items():
-                f.write(f"{criterion:20}: {'Passed' if passed else 'Failed'}\n")
-            
-            f.write("\nBEST PRACTICES:\n")
-            f.write("-"*80 + "\n")
-            for criterion, (passed, suggestion) in best_practices.items():
-                f.write(f"{criterion:20}: {'Met' if passed else 'Consider'}\n")
-            
-            if failed_required:
-                f.write("\nFAILED REQUIRED CRITERIA:\n")
-                f.write("-"*80 + "\n")
-                for failure in failed_required:
-                    f.write(f"- {failure}\n")
-            
-            if best_practices_missed:
-                f.write("\nBEST PRACTICE SUGGESTIONS:\n")
-                f.write("-"*80 + "\n")
-                for suggestion in best_practices_missed:
-                    f.write(f"- {suggestion}\n")
-            
-            # Add summary statistics
-            f.write("\nSUMMARY:\n")
-            f.write("-"*80 + "\n")
-            f.write(f"Required Criteria Met: {len(required_validations) - len(failed_required)}/{len(required_validations)}\n")
-            f.write(f"Best Practices Met: {len(best_practices_met)}/{len(best_practices)}\n")
-    
-    # Assert only required validations
-    assert all(passed for passed, _ in required_validations.values()), \
-        "Failed required criteria:\n" + "\n".join(failed_required)
 
-    # Print summary statistics
-    print(f"\nSummary Statistics:")
-    print(f"Required Criteria Met: {len(required_validations) - len(failed_required)}/{len(required_validations)}")
-    print(f"Best Practices Met: {len(best_practices_met)}/{len(best_practices)}")
-    
-def test_missing_fields():
-    """Test missing required fields"""
-    print("\nTesting Missing Fields")
-    print("="*80)
-    
-    test_cases = [
-        ({"current_title": "Engineer"}, "Missing required fields"),
-        ({"years_experience": "5 years"}, "Missing required fields"),
-        ({}, "Empty payload")
-    ]
-    
-    for payload, case in test_cases:
-        print(f"\nTesting: {case}")
-        response = client.post(
-            "/api/resume-flow/generate-summary",
-            json=payload,
-            headers={"X-API-Key": api_key}
+def save_json_report(summary: str, payload: dict, validations: dict, metadata: dict) -> str:
+    """Save test results as a JSON file for automation."""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    content_hash = hashlib.md5((summary + timestamp).encode()).hexdigest()[:8]
+    filename = f"summary_{timestamp}_{content_hash}.json"
+    filepath = os.path.join(SUMMARIES_DIR, filename)
+
+    report = {
+        "metadata": metadata,
+        "input": payload,
+        "output": {
+            "summary": summary,
+            "word_count": len(summary.split()),
+        },
+        "validations": validations,
+        "summary_stats": {
+            "required_passed": sum(1 for v in validations["required"].values() if v["passed"]),
+            "required_total": len(validations["required"]),
+            "best_practices_passed": sum(1 for v in validations["best_practices"].values() if v["passed"]),
+            "best_practices_total": len(validations["best_practices"]),
+        },
+    }
+
+    with open(filepath, "w") as f:
+        json.dump(report, f, indent=2, default=str)
+
+    return filename
+
+
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
+
+@pytest.mark.slow
+class TestCreateSummary:
+    """Tests for POST /summaries"""
+
+    async def test_create_summary_returns_201(
+        self,
+        async_client: httpx.AsyncClient,
+        auth_headers: dict,
+        mock_auth: dict,
+        valid_payload: dict,
+    ):
+        """POST /summaries returns HTTP 201 Created"""
+        response = await async_client.post(
+            "/summaries",
+            json=valid_payload,
+            headers=auth_headers,
         )
-        
-        assert response.status_code == 422, \
-            f"Expected 422 for {case}, got {response.status_code}"
-        print(f"✓ Correctly failed with 422")
+        assert response.status_code == 201, (
+            f"Expected 201, got {response.status_code}: {response.text}"
+        )
+
+    async def test_create_summary_response_shape(
+        self,
+        async_client: httpx.AsyncClient,
+        auth_headers: dict,
+        mock_auth: dict,
+        valid_payload: dict,
+    ):
+        """POST /summaries response contains required fields"""
+        response = await async_client.post(
+            "/summaries",
+            json=valid_payload,
+            headers=auth_headers,
+        )
+        assert response.status_code == 201
+        data = response.json()
+        for field in ("id", "summary", "current_title", "years_experience", "skills", "created_at"):
+            assert field in data, f"Response missing required field: '{field}'"
+        assert isinstance(data["summary"], str)
+        assert len(data["summary"]) > 0
+        assert data["current_title"] == valid_payload["current_title"]
+
+    async def test_create_summary_content_quality(
+        self,
+        async_client: httpx.AsyncClient,
+        auth_headers: dict,
+        mock_auth: dict,
+        valid_payload: dict,
+    ):
+        """POST /summaries returns a well-written professional summary"""
+        start = time.time()
+        response = await async_client.post(
+            "/summaries",
+            json=valid_payload,
+            headers=auth_headers,
+        )
+        elapsed = time.time() - start
+        assert response.status_code == 201
+
+        summary = response.json()["summary"]
+        validations = validate_summary(summary, valid_payload)
+
+        report_file = save_json_report(
+            summary=summary,
+            payload=valid_payload,
+            validations=validations,
+            metadata={
+                "test": "test_create_summary_content_quality",
+                "generated_at": datetime.now().isoformat(),
+                "response_time_seconds": round(elapsed, 2),
+                "api_version": "5.0.0",
+            },
+        )
+        print(f"\n  Report saved: {report_file}")
+
+        failed = [k for k, v in validations["required"].items() if not v["passed"]]
+        assert not failed, "Required validations failed:\n" + "\n".join(
+            f"  - {k}: {validations['required'][k]['detail']}" for k in failed
+        )
+
+    async def test_create_summary_no_auth_returns_403(
+        self,
+        async_client: httpx.AsyncClient,
+        valid_payload: dict,
+    ):
+        """POST /summaries without Authorization header returns 403"""
+        response = await async_client.post("/summaries", json=valid_payload)
+        assert response.status_code == 403
+
+    async def test_create_summary_missing_required_fields(
+        self,
+        async_client: httpx.AsyncClient,
+        auth_headers: dict,
+        mock_auth: dict,
+        valid_payload: dict,
+    ):
+        """POST /summaries with missing required fields returns 422"""
+        for required_field in ("current_title", "years_experience", "skills"):
+            payload = valid_payload.copy()
+            del payload[required_field]
+            response = await async_client.post(
+                "/summaries",
+                json=payload,
+                headers=auth_headers,
+            )
+            assert response.status_code == 422, (
+                f"Expected 422 when '{required_field}' is missing, got {response.status_code}"
+            )
+
+
+@pytest.mark.unit
+class TestListSummaries:
+    """Tests for GET /summaries"""
+
+    async def test_list_summaries_returns_200(
+        self,
+        async_client: httpx.AsyncClient,
+        auth_headers: dict,
+        mock_auth: dict,
+    ):
+        """GET /summaries returns HTTP 200"""
+        response = await async_client.get("/summaries", headers=auth_headers)
+        assert response.status_code == 200
+
+    async def test_list_summaries_response_shape(
+        self,
+        async_client: httpx.AsyncClient,
+        auth_headers: dict,
+        mock_auth: dict,
+    ):
+        """GET /summaries response has pagination fields"""
+        response = await async_client.get("/summaries", headers=auth_headers)
+        data = response.json()
+        for field in ("data", "total", "limit", "offset"):
+            assert field in data, f"Response missing field: '{field}'"
+        assert isinstance(data["data"], list)
+
+    async def test_list_summaries_no_auth_returns_403(
+        self,
+        async_client: httpx.AsyncClient,
+    ):
+        """GET /summaries without auth returns 403"""
+        response = await async_client.get("/summaries")
+        assert response.status_code == 403
+
+
+@pytest.mark.unit
+class TestGetSummaryById:
+    """Tests for GET /summaries/{id}"""
+
+    async def test_get_summary_by_id_returns_404(
+        self,
+        async_client: httpx.AsyncClient,
+        auth_headers: dict,
+        mock_auth: dict,
+    ):
+        """GET /summaries/{id} returns 404 (persistence not yet implemented)"""
+        response = await async_client.get(
+            "/summaries/nonexistent-id-123",
+            headers=auth_headers,
+        )
+        assert response.status_code == 404

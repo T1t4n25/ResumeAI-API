@@ -13,7 +13,7 @@ class CoverLetterService:
     def __init__(self):
         self.generator = CoverLetterGenerator()
     
-    def generate_cover_letter(self, request: CoverLetterCreate) -> CoverLetterResponse:
+    def generate_cover_letter(self, request: CoverLetterCreate) -> dict:
         """
         Generate a personalized cover letter using AI.
         
@@ -25,7 +25,7 @@ class CoverLetterService:
         """
         logger.info(f"Generating cover letter for {request.user_name}")
         result = self.generator.generate_cover_letter(request)
-        return CoverLetterResponse(**result)
+        return result
 
 
 # Global service instance

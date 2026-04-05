@@ -13,7 +13,7 @@ class SummaryService:
     def __init__(self):
         self.generator = SummaryGenerator()
     
-    def generate_summary(self, request: SummaryRequest) -> SummaryResponse:
+    def generate_summary(self, request: SummaryRequest) -> str:
         """
         Generate a professional summary for resume using AI.
         
@@ -25,7 +25,7 @@ class SummaryService:
         """
         logger.info(f"Generating summary for {request.current_title}")
         summary = self.generator.generate_summary(request)
-        return SummaryResponse(summary=summary)
+        return summary
 
 
 # Global service instance

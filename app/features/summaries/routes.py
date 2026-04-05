@@ -1,8 +1,8 @@
 """Summaries Feature - API Routes (RESTful)"""
 from fastapi import APIRouter, Depends, Request, status, HTTPException
 from typing import Dict, Any
-import uuid
-from datetime import datetime
+import uuid_utils
+from datetime import datetime, timezone
 from app.features.summaries.models import (
     SummaryCreate,
     SummaryResponse,
@@ -36,14 +36,14 @@ async def create_summary(
     """
     result = summary_service.generate_summary(data)
     return SummaryResponse(
-        id=str(uuid.uuid7()),
-        summary=result.summary,
+        id=str(uuid_utils.uuid7()),
+        summary=result,
         current_title=data.current_title,
         years_experience=data.years_experience,
         skills=data.skills,
         achievements=data.achievements,
-        created_at=datetime.now(datetime.UTC),
-        updated_at=datetime.now(datetime.UTC)
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
     )
 
 

@@ -1,8 +1,8 @@
 """Project Descriptions Feature - API Routes (RESTful)"""
 from fastapi import APIRouter, Depends, Request, status, HTTPException
 from typing import Dict, Any
-import uuid
-from datetime import datetime
+import uuid_utils
+from datetime import datetime, timezone
 from app.features.project_descriptions.models import (
     ProjectDescriptionCreate,
     ProjectDescriptionResponse,
@@ -36,12 +36,12 @@ async def create_project_description(
     """
     result = project_description_service.generate_description(data)
     return ProjectDescriptionResponse(
-        id=str(uuid.uuid7()),
-        project_description=result.project_description,
+        id=str(uuid_utils.uuid7()),
+        project_description=result,
         project_name=data.project_name,
         skills=data.skills,
-        created_at=datetime.now(datetime.UTC),
-        updated_at=datetime.now(datetime.UTC)
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
     )
 
 

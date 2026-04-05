@@ -21,3 +21,4 @@ cryptography
 aiohttp>=3.8.0
 async-lru>=2.0.0
 PyJWT[cryptography]>=2.8.0
+uuid-utils>=0.14.0

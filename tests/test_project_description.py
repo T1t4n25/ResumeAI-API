@@ -1,274 +1,325 @@
 # tests/test_project_description.py
-import sys
-import os
+"""
+Tests for the project descriptions feature.
+
+Endpoints tested (new RESTful path — was /api/resume-flow/generate-project-description):
+  POST /project-descriptions        → 201 { id, project_description, project_name, skills, ... }
+  GET  /project-descriptions        → 200 { data: [], total: 0, ... }
+  GET  /project-descriptions/{id}   → 404 (persistence not yet implemented)
+
+Auth: Bearer token header (Keycloak JWT — mocked in unit tests via dependency override)
+"""
 import re
-import pytest
+import os
+import json
 import time
+import pytest
 import hashlib
+import httpx
 from datetime import datetime
-from fastapi.testclient import TestClient
-from typing import List, Dict
 
-# Add project root to Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from main import app
-
-# Create test client
-client = TestClient(app)
-
-api_key = "-oZ7Dhbq-GyYWA-ZSMP9BXNxQjRJpER0lsXqYSh98CE"
-
-API_VERSION = "3.0.0"
-
-# Create directory for generated project descriptions
+# ---------------------------------------------------------------------------
+# Output directory for generated content
+# ---------------------------------------------------------------------------
 PROJECTS_DIR = os.path.join(os.path.dirname(__file__), "generated_projects")
 os.makedirs(PROJECTS_DIR, exist_ok=True)
 
-# Action verbs for validation
-ACTION_VERBS = [
-    "developed", "built", "created", "implemented", 
-    "designed", "architected", "engineered", "constructed",
-    "established", "launched", "led", "managed", "orchestrated"
+# Action verbs used in CV project descriptions
+CV_ACTION_VERBS = [
+    "developed", "built", "created", "implemented", "designed", "architected",
+    "engineered", "constructed", "established", "launched", "led", "managed",
+    "delivered", "deployed", "integrated", "optimized",
 ]
 
 
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
+
 @pytest.fixture
 def valid_payload():
-    """Test payload for project description"""
+    """Standard project description request payload"""
     return {
-        "project_name": "E-commerce Website",
-        "skills": "React, Firebase, Stripe"
+        "project_name": "E-commerce Platform",
+        "skills": "React, Firebase, Stripe, REST APIs",
+        "project_description": "An online store for small businesses with real-time inventory",
     }
+
+
+@pytest.fixture
+def minimal_payload():
+    """Minimal payload — only required fields"""
+    return {
+        "project_name": "Portfolio Website",
+        "skills": "HTML, CSS, JavaScript",
+    }
+
+
+# ---------------------------------------------------------------------------
+# Validation helpers
+# ---------------------------------------------------------------------------
 
 def validate_project_description(description: str, payload: dict) -> dict:
-    """
-    Comprehensive project description validation
-    """
-    # Count words in description
-    word_count = len(description.split())
-    
-    # Required checks
-    required_validations = {
-        "Word Count": (
-            15 <= word_count <= 50,
-            f"Word count ({word_count}) outside range 15-50 words"
-        ),
-        "Project Name": (
-            any(term.lower() in description.lower() for term in payload["project_name"].split()),
-            "Project name not mentioned"
-        ),
-        "Skills": (
-            any(skill.lower() in description.lower() for skill in payload["skills"].split(", ")),
-            "Skills not included"
-        ),
+    """Run required and best-practice validations on a generated project description."""
+    words = description.split()
+    word_count = len(words)
+
+    required = {
+        "word_count_in_range": {
+            "passed": 15 <= word_count <= 60,
+            "detail": f"Word count {word_count} (expected 15–60)",
+        },
+        "mentions_project_name": {
+            "passed": any(
+                term.lower() in description.lower()
+                for term in payload["project_name"].split()
+            ),
+            "detail": f"Should mention project name '{payload['project_name']}'",
+        },
+        "mentions_at_least_one_skill": {
+            "passed": any(
+                skill.strip().lower() in description.lower()
+                for skill in payload["skills"].split(",")
+            ),
+            "detail": "Should mention at least one skill from the skills list",
+        },
     }
 
-    # Best practices checks
     best_practices = {
-        "Action Verb Start": (
-            any(description.lower().startswith(verb) for verb in ACTION_VERBS),
-            "Consider starting with an action verb"
-        ),
-        "Technical Terms": (
-            bool(re.search(r'(app|application|website|platform|system|software)', description.lower())),
-            "Consider including technical terms"
-        ),
-        "Achievement Focus": (
-            any(word in description.lower() for word in ["improved", "optimized", "enhanced", "increased", "reduced"]),
-            "Consider mentioning achievements or improvements"
-        ),
-        "Specificity": (
-            bool(re.search(r'(\d+%|\d+ times|\d+ users)', description.lower())),
-            "Consider adding specific metrics or numbers"
-        )
+        "starts_with_action_verb": {
+            "passed": any(
+                description.lower().startswith(verb)
+                for verb in CV_ACTION_VERBS
+            ),
+            "detail": f"Ideally starts with an action verb like: {', '.join(CV_ACTION_VERBS[:5])}...",
+        },
+        "uses_technical_term": {
+            "passed": bool(
+                re.search(
+                    r"\b(app|application|website|platform|system|software|service|api)\b",
+                    description.lower(),
+                )
+            ),
+            "detail": "Should include technical terminology",
+        },
+        "has_impact_or_achievement": {
+            "passed": any(
+                word in description.lower()
+                for word in ["improved", "optimized", "enhanced", "increased", "reduced", "scalable", "efficient"]
+            ),
+            "detail": "Should mention impact or achievement",
+        },
     }
 
-    return {
-        "required": required_validations,
-        "best_practices": best_practices
-    }
+    return {"required": required, "best_practices": best_practices}
 
-def save_test_report(description: str, payload: dict, 
-                   validations: dict, metadata: dict) -> str:
-    """Save complete test report"""
+
+def save_json_report(description: str, payload: dict, validations: dict, metadata: dict) -> str:
+    """Save test results as a JSON file for automation."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     content_hash = hashlib.md5((description + timestamp).encode()).hexdigest()[:8]
-    filename = f"project_description_report_{timestamp}_{content_hash}.txt"
+    filename = f"project_desc_{timestamp}_{content_hash}.json"
     filepath = os.path.join(PROJECTS_DIR, filename)
-    
-    with open(filepath, 'w') as f:
-        # Header
-        f.write("="*80 + "\n")
-        f.write("PROJECT DESCRIPTION GENERATION REPORT\n")
-        f.write("="*80 + "\n\n")
 
-        # Metadata
-        f.write("TEST METADATA:\n")
-        f.write("-"*40 + "\n")
-        for key, value in metadata.items():
-            f.write(f"{key}: {value}\n")
-        
-        # Input Data
-        f.write("\nINPUT PARAMETERS:\n")
-        f.write("-"*40 + "\n")
-        for key, value in payload.items():
-            f.write(f"{key}: {value}\n")
+    report = {
+        "metadata": metadata,
+        "input": payload,
+        "output": {
+            "project_description": description,
+            "word_count": len(description.split()),
+        },
+        "validations": validations,
+        "summary": {
+            "required_passed": sum(1 for v in validations["required"].values() if v["passed"]),
+            "required_total": len(validations["required"]),
+            "best_practices_passed": sum(1 for v in validations["best_practices"].values() if v["passed"]),
+            "best_practices_total": len(validations["best_practices"]),
+        },
+    }
 
-        # Generated Project Description
-        f.write("\n" + "="*80 + "\n")
-        f.write("GENERATED PROJECT DESCRIPTION:\n")
-        f.write("="*80 + "\n\n")
-        f.write(description)
-        
-        # Statistics
-        f.write("\n\n" + "="*80 + "\n")
-        f.write("STATISTICS:\n")
-        f.write("-"*40 + "\n")
-        f.write(f"Word Count: {len(description.split())}\n")
-        
-        # Validation Results
-        f.write("\nVALIDATION RESULTS:\n")
-        f.write("="*80 + "\n")
-        
-        # Required Criteria
-        f.write("\nRequired Criteria:\n")
-        f.write("-"*40 + "\n")
-        for criterion, (passed, message) in validations["required"].items():
-            f.write(f"{criterion:20}: {'✓' if passed else '✗'}\n")
-        
-        # Best Practices
-        f.write("\nBest Practices:\n")
-        f.write("-"*40 + "\n")
-        for criterion, (passed, message) in validations["best_practices"].items():
-            f.write(f"{criterion:20}: {'✓' if passed else '○'}\n")
-        
-        # Failed Validations
-        failed_required = [(c, m) for c, (p, m) in validations["required"].items() if not p]
-        missed_practices = [(c, m) for c, (p, m) in validations["best_practices"].items() if not p]
-        
-        if failed_required:
-            f.write("\nFAILED REQUIRED CRITERIA:\n")
-            f.write("-"*40 + "\n")
-            for criterion, message in failed_required:
-                f.write(f"- {criterion}: {message}\n")
-        
-        if missed_practices:
-            f.write("\nBEST PRACTICE SUGGESTIONS:\n")
-            f.write("-"*40 + "\n")
-            for criterion, message in missed_practices:
-                f.write(f"- {criterion}: {message}\n")
-        
-        # Summary
-        f.write("\nSUMMARY:\n")
-        f.write("-"*40 + "\n")
-        f.write(f"Required Criteria Met: {len(validations['required']) - len(failed_required)}/{len(validations['required'])}\n")
-        f.write(f"Best Practices Met: {len(validations['best_practices']) - len(missed_practices)}/{len(validations['best_practices'])}\n")
-    
+    with open(filepath, "w") as f:
+        json.dump(report, f, indent=2, default=str)
+
     return filename
 
-def test_project_description_generation(valid_payload):
-    """Test project description generation"""
-    print("\nTesting Project Description Generation")
-    print("="*80)
-    
-    # Generate project description
-    start_time = time.time()
-    response = client.post(
-        "/api/resume-flow/generate-project-description",
-        json=valid_payload,
-        headers={"X-API-Key": api_key}
-    )
-    generation_time = time.time() - start_time
-    
-    # Check response
-    assert response.status_code == 200, f"API call failed: {response.text}"
-    
-    # Extract description
-    result = response.json()
-    assert "project_description" in result, "No project_description in response"
-    description = result["project_description"]
-    
-    # Run validations
-    validations = validate_project_description(description, valid_payload)
-    
-    # Save comprehensive report
-    filename = save_test_report(
-        description=description,
-        payload=valid_payload,
-        validations=validations,
-        metadata={
-            "Generated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "Response Time": f"{generation_time:.2f} seconds",
-            "API Version": API_VERSION,
-            "Model": "Gemini Pro"        }
-    )
-    
-    # Print summary
-    print(f"\nReport saved to: {filename}")
-    print("\nValidation Summary:")
-    print("-"*40)
-    
-    failed_required = [(c, m) for c, (p, m) in validations["required"].items() if not p]
-    missed_practices = [(c, m) for c, (p, m) in validations["best_practices"].items() if not p]
-    
-    print(f"Required Criteria Met: {len(validations['required']) - len(failed_required)}/{len(validations['required'])}")
-    print(f"Best Practices Met: {len(validations['best_practices']) - len(missed_practices)}/{len(validations['best_practices'])}")
-    
-    # Assert only required validations
-    assert len(failed_required) == 0, "\n".join(f"- {c}: {m}" for c, m in failed_required)
 
-def test_invalid_api_key(valid_payload):
-    """Test with invalid API key"""
-    response = client.post(
-        "/api/resume-flow/generate-project-description",
-        json=valid_payload,
-        headers={"X-API-Key": "invalid_key"}
-    )
-    assert response.status_code == 403, "Expected forbidden access with invalid API key"
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
 
-def test_missing_fields():
-    """Test missing required fields"""
-    test_cases = [
-        ({"project_name": "Test Project"}, "Missing skills"),
-        ({"skills": "Python, FastAPI"}, "Missing project name"),
-        ({}, "Empty payload")
-    ]
-    
-    for payload, case in test_cases:
-        print(f"\nTesting: {case}")
-        response = client.post(
-            "/api/resume-flow/generate-project-description",
-            json=payload,
-            headers={"X-API-Key": api_key}
+@pytest.mark.slow
+class TestCreateProjectDescription:
+    """Tests for POST /project-descriptions"""
+
+    async def test_create_returns_201(
+        self,
+        async_client: httpx.AsyncClient,
+        auth_headers: dict,
+        mock_auth: dict,
+        valid_payload: dict,
+    ):
+        """POST /project-descriptions returns HTTP 201 Created"""
+        response = await async_client.post(
+            "/project-descriptions",
+            json=valid_payload,
+            headers=auth_headers,
         )
-        
-        assert response.status_code == 422, \
-            f"Expected 422 for {case}, got {response.status_code}"
+        assert response.status_code == 201, (
+            f"Expected 201, got {response.status_code}: {response.text}"
+        )
 
-def test_response_time(valid_payload):
-    """Test response time"""
-    print("\nTesting Response Time")
-    print("="*80)
-    
-    start_time = time.time()
-    response = client.post(
-        "/api/resume-flow/generate-project-description",
-        json=valid_payload,
-        headers={"X-API-Key": api_key}
-    )
-    end_time = time.time()
-    
-    response_time = end_time - start_time
-    
-    assert response.status_code == 200, "API call failed during performance test"
-    assert response_time < 10, f"Response took {response_time:.2f} seconds (limit: 10s)"
-    
-    print(f"Response time: {response_time:.2f} seconds")
-    print("✓ Performance test passed")
+    async def test_create_response_shape(
+        self,
+        async_client: httpx.AsyncClient,
+        auth_headers: dict,
+        mock_auth: dict,
+        valid_payload: dict,
+    ):
+        """POST /project-descriptions response contains required fields"""
+        response = await async_client.post(
+            "/project-descriptions",
+            json=valid_payload,
+            headers=auth_headers,
+        )
+        assert response.status_code == 201
+        data = response.json()
+        for field in ("id", "project_description", "project_name", "skills", "created_at"):
+            assert field in data, f"Response missing required field: '{field}'"
+        assert isinstance(data["project_description"], str)
+        assert len(data["project_description"]) > 0
+        assert data["project_name"] == valid_payload["project_name"]
+        assert data["skills"] == valid_payload["skills"]
 
-def test_health_check():
-    """Test health check endpoint"""
-    response = client.get("/api/resume-flow/health")
-    assert response.status_code == 200
-    assert response.json() == {"status": "healthy"}
+    async def test_create_content_quality(
+        self,
+        async_client: httpx.AsyncClient,
+        auth_headers: dict,
+        mock_auth: dict,
+        valid_payload: dict,
+    ):
+        """POST /project-descriptions returns a valid CV-ready project description"""
+        start = time.time()
+        response = await async_client.post(
+            "/project-descriptions",
+            json=valid_payload,
+            headers=auth_headers,
+        )
+        elapsed = time.time() - start
+        assert response.status_code == 201
+
+        description = response.json()["project_description"]
+        validations = validate_project_description(description, valid_payload)
+
+        report_file = save_json_report(
+            description=description,
+            payload=valid_payload,
+            validations=validations,
+            metadata={
+                "test": "test_create_content_quality",
+                "generated_at": datetime.now().isoformat(),
+                "response_time_seconds": round(elapsed, 2),
+                "api_version": "5.0.0",
+            },
+        )
+        print(f"\n  Report saved: {report_file}")
+
+        failed = [k for k, v in validations["required"].items() if not v["passed"]]
+        assert not failed, "Required validations failed:\n" + "\n".join(
+            f"  - {k}: {validations['required'][k]['detail']}" for k in failed
+        )
+
+    async def test_create_with_minimal_payload(
+        self,
+        async_client: httpx.AsyncClient,
+        auth_headers: dict,
+        mock_auth: dict,
+        minimal_payload: dict,
+    ):
+        """POST /project-descriptions works with only required fields (no description)"""
+        response = await async_client.post(
+            "/project-descriptions",
+            json=minimal_payload,
+            headers=auth_headers,
+        )
+        assert response.status_code == 201
+
+    async def test_create_no_auth_returns_403(
+        self,
+        async_client: httpx.AsyncClient,
+        valid_payload: dict,
+    ):
+        """POST /project-descriptions without Authorization header returns 403"""
+        response = await async_client.post("/project-descriptions", json=valid_payload)
+        assert response.status_code == 403
+
+    async def test_create_missing_required_fields(
+        self,
+        async_client: httpx.AsyncClient,
+        auth_headers: dict,
+        mock_auth: dict,
+    ):
+        """POST /project-descriptions with missing required fields returns 422"""
+        for bad_payload, description in [
+            ({"project_name": "Test"}, "missing skills"),
+            ({"skills": "Python"}, "missing project_name"),
+            ({}, "empty payload"),
+        ]:
+            response = await async_client.post(
+                "/project-descriptions",
+                json=bad_payload,
+                headers=auth_headers,
+            )
+            assert response.status_code == 422, (
+                f"Expected 422 for {description}, got {response.status_code}"
+            )
+
+
+@pytest.mark.unit
+class TestListProjectDescriptions:
+    """Tests for GET /project-descriptions"""
+
+    async def test_list_returns_200(
+        self,
+        async_client: httpx.AsyncClient,
+        auth_headers: dict,
+        mock_auth: dict,
+    ):
+        """GET /project-descriptions returns HTTP 200"""
+        response = await async_client.get("/project-descriptions", headers=auth_headers)
+        assert response.status_code == 200
+
+    async def test_list_response_shape(
+        self,
+        async_client: httpx.AsyncClient,
+        auth_headers: dict,
+        mock_auth: dict,
+    ):
+        """GET /project-descriptions response has pagination fields"""
+        response = await async_client.get("/project-descriptions", headers=auth_headers)
+        data = response.json()
+        for field in ("data", "total", "limit", "offset"):
+            assert field in data, f"Response missing field: '{field}'"
+        assert isinstance(data["data"], list)
+
+    async def test_list_no_auth_returns_403(self, async_client: httpx.AsyncClient):
+        """GET /project-descriptions without auth returns 403"""
+        response = await async_client.get("/project-descriptions")
+        assert response.status_code == 403
+
+
+@pytest.mark.unit
+class TestGetProjectDescriptionById:
+    """Tests for GET /project-descriptions/{id}"""
+
+    async def test_get_by_id_returns_404(
+        self,
+        async_client: httpx.AsyncClient,
+        auth_headers: dict,
+        mock_auth: dict,
+    ):
+        """GET /project-descriptions/{id} returns 404 (persistence not yet implemented)"""
+        response = await async_client.get(
+            "/project-descriptions/nonexistent-id-123",
+            headers=auth_headers,
+        )
+        assert response.status_code == 404

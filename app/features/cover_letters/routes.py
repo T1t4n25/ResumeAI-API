@@ -1,8 +1,8 @@
 """Cover Letters Feature - API Routes (RESTful)"""
 from fastapi import APIRouter, Depends, Request, status, HTTPException
 from typing import Dict, Any, List
-import uuid
-from datetime import datetime
+import uuid_utils
+from datetime import datetime, timezone
 from app.features.cover_letters.models import (
     CoverLetterCreate,
     CoverLetterResponse,
@@ -36,11 +36,11 @@ async def create_cover_letter(
     """
     result = cover_letter_service.generate_cover_letter(data)
     return CoverLetterResponse(
-        id=str(uuid.uuid7()),
-        cover_letter=result.cover_letter,
-        tokens_used=result.tokens_used,
-        created_at=datetime.now(datetime.UTC),
-        updated_at=datetime.now(datetime.UTC)
+        id=str(uuid_utils.uuid7()),
+        cover_letter=result["cover_letter"],
+        tokens_used=result.get("tokens_used", 0),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
     )
 
 

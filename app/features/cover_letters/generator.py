@@ -11,7 +11,7 @@ class CoverLetterGenerator:
     def __init__(self):
         # Configure Gemini API
         self.client = genai.Client(api_key=os.getenv('GEMINI_API_KEY'))
-        self.model_name = "gemini-2.5-flash-lite-preview-06-17"
+        self.model_name = "gemini-2.5-flash"
         self.logger = logging.getLogger("resume_flow")
 
     def generate_cover_letter(self, request):
