@@ -215,10 +215,21 @@ setup_routers(app)
 
 if __name__ == "__main__":
     import uvicorn
+
+    reload_enabled = settings.environment == "development"
+    reload_excludes = [
+        "logs/*",
+        "generated_resumes/*",
+        "tests/*",
+        "Memory/*",
+    ] if reload_enabled else None
+
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
         port=settings.api_port,
-        reload=settings.environment == "development",
+        reload=reload_enabled,
+        reload_dirs=["app"] if reload_enabled else None,
+        reload_excludes=reload_excludes,
         log_level=settings.log_level.lower()
     )
