@@ -1,0 +1,235 @@
+{
+  "suite_version": "2.0.0",
+  "api_version": "5.0.0",
+  "created_at": "2026-04-04",
+  "auth_strategy": "keycloak_jwt_bearer",
+  "base_url": "http://localhost:8000",
+  "notes": "All protected endpoints require 'Authorization: Bearer <token>' header. Tokens are issued by Keycloak.",
+  "endpoint_groups": {
+    "health": {
+      "description": "Public health and API info endpoints",
+      "requires_auth": false,
+      "endpoints": {
+        "GET /": {
+          "test_id": "health_root",
+          "description": "API root info",
+          "expected_status": 200,
+          "requires_auth": false,
+          "rate_limit": "6/minute",
+          "implementation_status": "complete"
+        },
+        "GET /health": {
+          "test_id": "health_check",
+          "description": "Simple health check",
+          "expected_status": 200,
+          "requires_auth": false,
+          "rate_limit": "6/minute",
+          "implementation_status": "complete",
+          "response_fields": ["status", "version", "environment"]
+        }
+      }
+    },
+    "auth": {
+      "description": "Authentication endpoints backed by Keycloak",
+      "requires_auth": true,
+      "endpoints": {
+        "GET /auth/me": {
+          "test_id": "auth_me",
+          "description": "Get current authenticated user info",
+          "expected_status": 200,
+          "unauthorized_status": 403,
+          "requires_auth": true,
+          "rate_limit": "10/minute",
+          "implementation_status": "complete",
+          "response_fields": ["sub", "preferred_username", "email", "realm_access"]
+        },
+        "POST /auth/refresh": {
+          "test_id": "auth_refresh",
+          "description": "Refresh Keycloak access token",
+          "expected_status": 200,
+          "requires_auth": false,
+          "rate_limit": "10/minute",
+          "implementation_status": "complete",
+          "response_fields": ["access_token", "refresh_token", "token_type", "expires_in"]
+        },
+        "GET /auth/tokens/info": {
+          "test_id": "auth_token_info",
+          "description": "Decode and return JWT token payload (debug)",
+          "expected_status": 200,
+          "requires_auth": true,
+          "rate_limit": "10/minute",
+          "implementation_status": "complete"
+        }
+      }
+    },
+    "cover_letters": {
+      "description": "AI-powered cover letter generation",
+      "requires_auth": true,
+      "endpoints": {
+        "POST /cover-letters": {
+          "test_id": "cover_letter_create",
+          "description": "Generate a new cover letter using Gemini AI",
+          "expected_status": 201,
+          "unauthorized_status": 403,
+          "requires_auth": true,
+          "rate_limit": "5/minute",
+          "implementation_status": "complete",
+          "request_fields": ["job_post", "user_name", "user_degree", "user_title", "user_experience", "user_skills"],
+          "response_fields": ["id", "cover_letter", "tokens_used", "created_at", "updated_at"],
+          "ai_call": true
+        },
+        "GET /cover-letters": {
+          "test_id": "cover_letter_list",
+          "description": "List all cover letters for the current user",
+          "expected_status": 200,
+          "requires_auth": true,
+          "rate_limit": "10/minute",
+          "implementation_status": "stub_empty",
+          "response_fields": ["data", "total", "limit", "offset"]
+        },
+        "GET /cover-letters/{id}": {
+          "test_id": "cover_letter_get",
+          "description": "Get a specific cover letter by ID",
+          "expected_status": 404,
+          "requires_auth": true,
+          "rate_limit": "10/minute",
+          "implementation_status": "stub_404",
+          "note": "Returns 404 until persistence layer is implemented"
+        },
+        "DELETE /cover-letters/{id}": {
+          "test_id": "cover_letter_delete",
+          "description": "Delete a specific cover letter by ID",
+          "expected_status": 404,
+          "requires_auth": true,
+          "rate_limit": "10/minute",
+          "implementation_status": "stub_404",
+          "note": "Returns 404 until persistence layer is implemented"
+        }
+      }
+    },
+    "summaries": {
+      "description": "AI-powered professional summary generation",
+      "requires_auth": true,
+      "endpoints": {
+        "POST /summaries": {
+          "test_id": "summary_create",
+          "description": "Generate a new professional resume summary using Gemini AI",
+          "expected_status": 201,
+          "unauthorized_status": 403,
+          "requires_auth": true,
+          "rate_limit": "5/minute",
+          "implementation_status": "complete",
+          "request_fields": ["current_title", "years_experience", "skills", "achievements"],
+          "response_fields": ["id", "summary", "current_title", "years_experience", "skills", "created_at"],
+          "ai_call": true
+        },
+        "GET /summaries": {
+          "test_id": "summary_list",
+          "description": "List all summaries for the current user",
+          "expected_status": 200,
+          "requires_auth": true,
+          "rate_limit": "10/minute",
+          "implementation_status": "stub_empty",
+          "response_fields": ["data", "total", "limit", "offset"]
+        },
+        "GET /summaries/{id}": {
+          "test_id": "summary_get",
+          "description": "Get a specific summary by ID",
+          "expected_status": 404,
+          "requires_auth": true,
+          "rate_limit": "10/minute",
+          "implementation_status": "stub_404",
+          "note": "Returns 404 until persistence layer is implemented"
+        }
+      }
+    },
+    "project_descriptions": {
+      "description": "AI-powered project description generation for CVs",
+      "requires_auth": true,
+      "endpoints": {
+        "POST /project-descriptions": {
+          "test_id": "project_desc_create",
+          "description": "Generate a new project description using Gemini AI",
+          "expected_status": 201,
+          "unauthorized_status": 403,
+          "requires_auth": true,
+          "rate_limit": "5/minute",
+          "implementation_status": "complete",
+          "request_fields": ["project_name", "skills", "project_description"],
+          "response_fields": ["id", "project_description", "project_name", "skills", "created_at"],
+          "ai_call": true
+        },
+        "GET /project-descriptions": {
+          "test_id": "project_desc_list",
+          "description": "List all project descriptions for the current user",
+          "expected_status": 200,
+          "requires_auth": true,
+          "rate_limit": "10/minute",
+          "implementation_status": "stub_empty",
+          "response_fields": ["data", "total", "limit", "offset"]
+        },
+        "GET /project-descriptions/{id}": {
+          "test_id": "project_desc_get",
+          "description": "Get a specific project description by ID",
+          "expected_status": 404,
+          "requires_auth": true,
+          "rate_limit": "10/minute",
+          "implementation_status": "stub_404",
+          "note": "Returns 404 until persistence layer is implemented"
+        }
+      }
+    },
+    "interviews": {
+      "description": "AI-powered interview sessions via LiveKit",
+      "requires_auth": true,
+      "skip_reason": "LiveKit integration skipped in local tests",
+      "endpoints": {
+        "POST /interviews/rooms": {
+          "test_id": "interview_create_room",
+          "description": "Create a LiveKit interview room",
+          "expected_status": 201,
+          "requires_auth": true,
+          "rate_limit": "3/hour",
+          "implementation_status": "complete",
+          "skip_in_local": true
+        },
+        "GET /interviews/rooms": {
+          "test_id": "interview_list_rooms",
+          "description": "List interview rooms for current user",
+          "expected_status": 200,
+          "requires_auth": true,
+          "rate_limit": "10/minute",
+          "implementation_status": "stub_empty",
+          "skip_in_local": false
+        },
+        "GET /interviews/rooms/{id}": {
+          "test_id": "interview_get_room",
+          "description": "Get a specific interview room",
+          "expected_status": 404,
+          "requires_auth": true,
+          "rate_limit": "10/minute",
+          "implementation_status": "stub_404",
+          "skip_in_local": false
+        },
+        "POST /interviews/rooms/{id}/start": {
+          "test_id": "interview_start",
+          "description": "Start AI interviewer in a room",
+          "expected_status": 200,
+          "requires_auth": true,
+          "rate_limit": "3/hour",
+          "implementation_status": "complete",
+          "skip_in_local": true
+        },
+        "DELETE /interviews/rooms/{id}": {
+          "test_id": "interview_delete_room",
+          "description": "End an interview session",
+          "expected_status": 404,
+          "requires_auth": true,
+          "rate_limit": "10/minute",
+          "implementation_status": "stub_404",
+          "skip_in_local": false
+        }
+      }
+    }
+  }
+}

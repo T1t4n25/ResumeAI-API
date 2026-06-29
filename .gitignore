@@ -1,10 +1,13 @@
 tests/generated_cover_letters/
 tests/generated_projects/
 tests/generated_summaries/
+tests/test_report.json
 
 Database SQL/
 
-tests/generated_cover_letters/
+logs/
+generated_resumes/
+Memory/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

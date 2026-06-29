@@ -62,10 +62,14 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
-    """Initialize database tables"""
+    """
+    Initialize database tables.
+    Note: In production and development, use alembic migrations instead:
+    `alembic upgrade head`
+    """
+    # This is kept for backward compatibility and quick testing
+    # but migrations are the preferred way to manage schema changes.
     async with engine.begin() as conn:
-        # Import models here to avoid circular imports
-        # Note: User and ApiKey models kept for schema compatibility, not used for auth
         from app.shared.models import User, ApiKey
         await conn.run_sync(Base.metadata.create_all)
 
