@@ -22,7 +22,7 @@ from app.core.limiter import limiter
 output_dir = Path("logs")
 output_dir.mkdir(exist_ok=True)
 
-LOG_FILENAME = f"logs/logfile_{settings.environment}.log"
+LOG_FILENAME = f"../logs/logfile_{settings.environment}.log"
 
 # Configure both file AND console logging
 logging.basicConfig(
