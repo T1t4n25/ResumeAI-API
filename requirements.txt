@@ -1,5 +1,4 @@
-fastapi
-uvicorn[standard]
+fastapi[standard]>=0.138.2
 google-genai
 pydantic>=2.0.0
 pydantic-settings>=2.0.0
@@ -20,6 +19,6 @@ livekit-plugins-noise-cancellation
 cryptography
 aiohttp>=3.8.0
 async-lru>=2.0.0
-PyJWT[cryptography]>=2.8.0
+PyJWT>=2.8.0
 uuid-utils>=0.14.0
 alembic>=1.13.0
